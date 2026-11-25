@@ -766,9 +766,10 @@ svg.leaflet-image-layer.leaflet-interactive path {
   #bCalOk { padding: 10px 18px; border-radius: 12px; font-size: 13px; }
   .arrow { transition: transform .2s; filter: drop-shadow(0 1px 2px rgba(0,0,0,.5)); }
 
-  #calBar .act { overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch; } #calBar .act::-webkit-scrollbar { display: none; }
-  #calBar .act button { flex: 0 0 auto; white-space: nowrap; } #bSun { flex: 0 0 auto; }
-  #bShad, #bWalk, #bDecl { display: inline-flex; align-items: center; justify-content: center; padding: 10px 12px; border-radius: 12px; background: var(--sand); color: var(--ink); font-size: 13px; font-weight: 600; }
+  #calBar .actM { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 8px; }
+  #calBar .actM button { white-space: nowrap; padding: 9px 10px; font-size: 12.5px; }
+  #bShad, #bWalk, #bDecl { display: inline-flex; align-items: center; justify-content: center; gap: 5px; padding: 9px 10px; border-radius: 12px; background: var(--sand); color: var(--ink); font-size: 12.5px; font-weight: 600; }
+  #bSun { flex: none; } #bCalOk { flex: 1; }
   .mkp { width: 30px; height: 30px; border-radius: 50%; border: 2.5px solid #fff; box-shadow: 0 2px 6px rgba(0,0,0,.4); display: grid; place-items: center; color: #fff; transform: rotate(var(--cr, 0deg)); transition: transform var(--crt, .15s linear); }
   .mki { display: inline-grid; place-items: center; width: 20px; height: 20px; border-radius: 50%; color: #fff; margin-right: 6px; vertical-align: -4px; flex: none; }
   .icg { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; margin: 8px 0; }
@@ -791,9 +792,13 @@ svg.leaflet-image-layer.leaflet-interactive path {
   <div class="hd"><span id="calBadge"><span class="dot"></span><span id="calVal">Okreni kartu da se poklopi</span></span></div>
   <div id="calHint">Usmjeri vrh telefona (vodoravno) prema poznatom mjestu pa ga dodirni na mapi. Ili „Po sjeni“ (stani da ti sjena pada ispred, ne gledaj u Sunce), „Po hodanju“ ili skala.</div>
   <div id="calDialWrap"><div id="calWheel" aria-label="Skala za poravnanje po stepenima"><div id="calTrack"><div id="calInner"></div></div></div></div>
-  <div class="act">
+  <div class="actM">
+    <button id="bShad" onclick="calSun(true)">Po sjeni</button>
     <button id="bSun" onclick="calSun()"><svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2.5M12 19v2.5M2.5 12H5M19 12h2.5M5.3 5.3l1.8 1.8M16.9 16.9l1.8 1.8M18.7 5.3l-1.8 1.8M7.1 16.9l-1.8 1.8"/></svg><span>Prema Suncu</span></button>
-    <button id="bShad" onclick="calSun(true)">Po sjeni</button><button id="bWalk" onclick="calWalk()">Po hodanju</button><button id="bDecl" onclick="toggleDecl()">Dekl.</button>
+    <button id="bWalk" onclick="calWalk()">Po hodanju</button>
+    <button id="bDecl" onclick="toggleDecl()">Dekl.</button>
+  </div>
+  <div class="act">
     <button id="bRst" onclick="calReset()">Vrati</button>
     <button id="bCalOk" onclick="calToggle(false)">Gotovo</button>
   </div>
@@ -1426,11 +1431,14 @@ function rawAim() {   // sirovi smjer telefona = prosjek posljednjih ~1,2 s (ne 
 const aimNote = () => aimSd == null ? '' : ' · stabilnost ±' + aimSd.toFixed(1) + '°' + (aimSd > 4 ? ' (drži telefon mirnije)' : '');
 function updDecl() { const p = me || map.getCenter(), d = wmmDecl(p.lat, p.lng); if (Math.abs(d - declDeg) > 0.02) { declDeg = d; applyHdg(); } updDeclBtn(); }
 function updDeclBtn() { const b = $('bDecl'); if (b) b.textContent = 'Dekl. ' + (declDeg >= 0 ? '+' : '−') + Math.abs(declDeg).toFixed(1).replace('.', ',') + '° ' + (declOn ? '✓' : '✗'); }
-function toggleDecl() { declOn = !declOn; try { localStorage.setItem('hike_decl', declOn ? '1' : '0'); } catch (e) {} updDeclBtn(); applyHdg();
-  $('calHint').textContent = declOn ? 'Deklinacija uključena: kompas se svodi s magnetnog na pravi sjever (' + fmtSign(declDeg) + ' ovdje).' : 'Deklinacija isključena: koristi se sirov smjer telefona (isključi ako telefon već daje pravi sjever).'; }
+function toggleDecl() { declOn = !declOn; try { localStorage.setItem('hike_decl', declOn ? '1' : '0'); } catch (e) {}
+  if (calDone) { hdgOff = norm180(Math.round((hdgOff + (declOn ? -declDeg : declDeg)) * 10) / 10); calSavedOff = hdgOff; try { localStorage.setItem('hike_hdgOff', String(hdgOff)); } catch (e) {} syncCalDial(false); updRotLabel(); }
+  updDeclBtn(); applyHdg();
+  $('calHint').textContent = (declOn ? 'Deklinacija uključena (' + fmtSign(declDeg) + ' ovdje).' : 'Deklinacija isključena (sirov smjer telefona).') + (calDone ? ' Postojeće poravnanje je sačuvano.' : ''); }
 map.on('moveend', () => { if (!me) updDecl(); }); updDeclBtn();
 function calAlignTo(p) {
   if (!me) { $('calHint').textContent = 'Za poravnanje po objektu treba GPS pozicija – izađi na otvoreno.'; return; }
+  if (!gotOri || gpsMode || Date.now() - lastOri > 2500) { $('calHint').textContent = 'Kompas telefona još ne šalje podatke – uključi kompas ili pomjeri telefon u osmicu.'; return; }
   const d = dist(me, p), tb = bearing(me, p), exp = deg(Math.atan((meAcc || 10) / d));
   if (d < 150) { $('calHint').textContent = 'Objekat je preblizu (' + fmtD(d) + '). Izaberi nešto dalje od 500 m.'; return; }
   map.panTo(me, { animate: false }); calTarget = tb;
@@ -1463,13 +1471,17 @@ function sunAzPos(lat, lng, dt) {
   return { az, alt };
 }
 function calSun(shadow) {
+  if (!gotOri || gpsMode || Date.now() - lastOri > 2500) { $('calHint').textContent = 'Kompas telefona još ne šalje podatke – uključi kompas ili pomjeri telefon u osmicu.'; return; }
+  if (shadow && Math.abs(lastBeta) > 55) { $('calHint').textContent = 'Telefon je previše nagnut (' + Math.round(Math.abs(lastBeta)) + '°). Drži ga vodoravnije pa ponovo pritisni „Po sjeni“.'; return; }
   const ref = me || map.getCenter(), s = sunAzPos(ref.lat, ref.lng, new Date());
-  if (s.alt < -1) { $('calHint').textContent = 'Sunce je trenutno ispod horizonta — poravnaj po objektu na mapi, po hodanju ili povuci skalu.'; return; }
+  if (shadow ? s.alt < 2 : s.alt < -1) { $('calHint').textContent = (shadow ? 'Sunce je prenisko (' + Math.round(s.alt) + '°) da baci jasnu sjenu' : 'Sunce je trenutno ispod horizonta') + ' — poravnaj po objektu na mapi, po hodanju ili povuci skalu.'; return; }
+  if (shadow && s.alt > 78) { $('calHint').textContent = 'Sunce je skoro u zenitu (' + Math.round(s.alt) + '°) pa je sjena prekratka za nišanjenje – poravnaj po objektu ili po hodanju.'; return; }
   if (!shadow && s.alt > 65) { $('calHint').textContent = 'Sunce je previsoko (' + Math.round(s.alt) + '°) za nišanjenje – greška bi bila velika. Koristi „Po sjeni“.'; return; }
   const az = (s.az + (shadow ? 180 : 0)) % 360; calTarget = az;
   if (calLine) { map.removeLayer(calLine); calLine = null; }
   setHdgOff(az - rawAim() - declTerm(), true);
   $('calHint').textContent = (shadow ? 'Poravnano po sjeni' : 'Poravnano prema Suncu') + (me ? '' : ' (približno – po centru mape; uključi GPS)') + aimNote() +
+    (shadow && s.alt < 5 ? '. Sunce je nisko (' + Math.round(s.alt) + '°) – provjeri je li sjena oštra' : '') +
     (!shadow && s.alt > 45 ? '. Sunce je visoko (' + Math.round(s.alt) + '°) pa je nišanjenje manje tačno – bolje „Po sjeni“' : '') + '. Pritisni „Gotovo“.';
 }
 function calToggle(on) {
@@ -1501,7 +1513,7 @@ function calToggle(on) {
     const v = Math.max(-180, Math.min(180, Math.round(w.scrollLeft / DIAL_STEP) - 180));
     if (v !== lastDialDeg) {
       lastDialDeg = v; dragHoldUntil = Date.now() + 1200;
-      calTick(v % 5 === 0);
+      calTarget = null; calTick(v % 5 === 0);
       setHdgOff(v, false, true);
     }
   }, { passive: true });
@@ -1522,7 +1534,7 @@ function oriEvt(e) { let h = null;
   if (e.webkitCompassHeading != null) h = e.webkitCompassHeading;
   else if ((e.absolute || e.type === 'deviceorientationabsolute') && e.alpha != null) {
     const B = e.beta || 0, A = rad(e.alpha), Br = rad(B), G = rad(e.gamma || 0), sA = Math.sin(A), cA = Math.cos(A), sB = Math.sin(Br), cB = Math.cos(Br), sG = Math.sin(G), cG = Math.cos(G);
-    const tE = -sA * cB, tN = cA * cB, bE = -cA * sG - sA * sB * cG, bN = -sA * sG + cA * sB * cG, tl = Math.hypot(tE, tN) || 1, bl = Math.hypot(bE, bN) || 1, w = Math.max(0, Math.min(1, (Math.abs(B) - 55) / 35));
+    const tE = -sA * cB, tN = cA * cB, bE = -cA * sG - sA * sB * cG, bN = -sA * sG + cA * sB * cG, tl = Math.hypot(tE, tN) || 1, bl = Math.hypot(bE, bN) || 1, w = Math.max(0, Math.min(1, (B - 55) / 35));
     h = deg(Math.atan2((1 - w) * tE / tl + w * bE / bl, (1 - w) * tN / tl + w * bN / bl));   // vrh telefona (nagib < 55°) → leđa/kamera (nagib > 90°), bez skoka
   }
   if (h == null) return;
