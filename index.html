@@ -878,21 +878,23 @@ const sat = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Wo
 const map = L.map('map', { layers: [topo], zoomControl: false, zoomSnap: 0, zoomDelta: 1, wheelPxPerZoomLevel: 100, bounceAtZoomLimits: false }).setView([44.2, 17.9], 8);
 const rotPane = L.DomUtil.create('div', '', map._container); rotPane.id = 'rotPane';
 map._container.insertBefore(rotPane, map._controlContainer); rotPane.appendChild(map._mapPane);
-let mapRot = false, mapAng = 0, mapRotDeg = 0, rotSnapT = 0;
+let mapRot = false, mapAng = 0, mapRotDeg = 0, rotSnapT = 0, rotOrigY = 0.5, locLock = false;
+function setRotOrig(y) { if (rotOrigY === y) return; rotOrigY = y; rotPane.style.transformOrigin = '50% ' + Math.round(y * 100) + '%'; }
 const _origTPB = L.GridLayer.prototype._getTiledPixelBounds;
 L.GridLayer.prototype._getTiledPixelBounds = function(center) {
   if (!mapRot) return _origTPB.call(this, center);
   const m = this._map, z = m._animatingZoom ? Math.max(m._animateToZoom, m.getZoom()) : m.getZoom(),
         sc = m.getZoomScale(z, this._tileZoom), c = m.project(center, this._tileZoom).floor(),
-        sz = m.getSize(), r = Math.ceil(Math.hypot(sz.x, sz.y) / (2 * sc));
+        sz = m.getSize(), r = Math.ceil(Math.hypot(sz.x * 0.52, sz.y * 0.72) / sc);
   return new L.Bounds(c.subtract([r, r]), c.add([r, r]));
 };
 const _origME2CP = map.mouseEventToContainerPoint.bind(map);
 map.mouseEventToContainerPoint = function(e) {
   const pt = _origME2CP(e); if (!mapAng) return pt;
-  const c = this.getSize().divideBy(2), dx = pt.x - c.x, dy = pt.y - c.y, ca = Math.cos(-mapAng), sa = Math.sin(-mapAng);
+  const sz = this.getSize(), c = L.point(sz.x / 2, sz.y * rotOrigY), dx = pt.x - c.x, dy = pt.y - c.y, ca = Math.cos(-mapAng), sa = Math.sin(-mapAng);
   return L.point(c.x + dx * ca - dy * sa, c.y + dx * sa + dy * ca);
 };
+map.on('dragstart', () => { locLock = false; });
 const _drg = map.dragging && map.dragging._draggable;
 if (_drg) _drg.on('predrag', e => {
   if (!mapAng) return;
@@ -947,9 +949,10 @@ const sheet = h => { $('scp').style.display = 'none'; $('sheet').innerHTML = (h 
 let me = null, meMarker = null, meCircle = null, watchId = null, follow = false, firstFix = true, mode = null;
 function centerOnMe(z, anim = false) {
   if (!me) return;
-  const tz = z != null ? z : map.getZoom(), dy = calOn ? 0 : map.getSize().y * 0.18;
-  if (!dy) { map.setView(me, tz, { animate: anim }); return; }
-  const p = map.project(me, tz), ux = dy * Math.sin(mapAng), uy = dy * Math.cos(mapAng);
+  const tz = z != null ? z : map.getZoom(), h = map.getSize().y;
+  if (calOn) { map.setView(me, tz, { animate: anim }); return; }
+  const off = (0.68 - rotOrigY) * h, ux = off * Math.sin(mapAng), uy = (rotOrigY - 0.5) * h + off * Math.cos(mapAng);
+  const p = map.project(me, tz);
   map.setView(map.unproject(L.point(p.x - ux, p.y - uy), tz), tz, { animate: anim });
 }
 function onPos(pos) {
@@ -963,15 +966,15 @@ function onPos(pos) {
   if (walk) walkSample(c);
   if (!meMarker) { meCircle = L.circle(me, { radius: c.accuracy, weight: 1, color: '#d93025' }).addTo(map); meMarker = L.marker(me, { icon: ARROW, zIndexOffset: 1000 }).addTo(map); applyHdg(true); }
   else { meMarker.setLatLng(me); meCircle.setLatLng(me).setRadius(c.accuracy); }
-  if (firstFix) { centerOnMe(15, false); firstFix = false; } else if (follow) centerOnMe(map.getZoom(), true);
+  if (firstFix) { locLock = true; centerOnMe(15, false); firstFix = false; } else if (locLock || follow) centerOnMe(map.getZoom(), true);
   recPoint(pos); navUpdate(); sosTick(pos);
 }
 function onErr(e) { info.textContent = ({1:'Pristup lokaciji odbijen.',2:'Lokacija nedostupna – uključi GPS.',3:'Isteklo vrijeme.'})[e.code] || e.message; if (!isSecureContext) info.textContent += ' (Potreban je HTTPS.)'; }
 function startWatch() { if (!navigator.geolocation) { info.textContent = 'Geolokacija nije podržana.'; return; }
   if (watchId !== null) { if (me) centerOnMe(Math.max(map.getZoom(), 15), true); return; }
   info.textContent = 'Tražim lokaciju…'; watchId = navigator.geolocation.watchPosition(onPos, onErr, { enableHighAccuracy: true, maximumAge: 3000, timeout: 20000 }); }
-$('bLoc').onclick = () => { startWatch(); if (me) info.innerHTML = '<b>Ti si ovdje:</b> ' + fmtLL(me) + ' (±' + Math.round(meAcc) + ' m)' + (meAlt != null ? '<br>GPS visina: <b>' + Math.round(meAlt) + ' m</b>' : '') + '<br>Smjer: ' + brg(hdg); };
-$('bFollow').onclick = () => { follow = !follow; $('bFollowT').textContent = follow ? 'Prati: on' : 'Prati'; $('bFollow').classList.toggle('gray', !follow); if (follow) startWatch(); };
+$('bLoc').onclick = () => { locLock = true; startWatch(); if (me) info.innerHTML = '<b>Ti si ovdje:</b> ' + fmtLL(me) + ' (±' + Math.round(meAcc) + ' m)' + (meAlt != null ? '<br>GPS visina: <b>' + Math.round(meAlt) + ' m</b>' : '') + '<br>Smjer: ' + brg(hdg); };
+$('bFollow').onclick = () => { follow = !follow; if (follow) locLock = true; $('bFollowT').textContent = follow ? 'Prati: on' : 'Prati'; $('bFollow').classList.toggle('gray', !follow); if (follow) startWatch(); };
 
 /* ---------- Alati: mjerenje, bearing, radius, visina ---------- */
 let mPts = [], mLine = null, rCenter = null, bStart = null, token = 0;
@@ -1295,7 +1298,7 @@ function applyMapRot(smooth = false) {
     mapRotDeg = nearest; mapAng = 0; lastCrDeg = nearest;
     rotPane.style.transform = 'rotate(' + nearest + 'deg) translateZ(0)';
     rotPane.style.setProperty('--cr', (-nearest) + 'deg');
-    rotSnapT = setTimeout(() => { if (!mapRot) { rotPane.style.transition = 'none'; mapRotDeg = 0; lastCrDeg = 0; rotPane.style.transform = ''; rotPane.style.setProperty('--crt', '0s'); rotPane.style.setProperty('--cr', '0deg'); } }, 295);
+    rotSnapT = setTimeout(() => { if (!mapRot) { rotPane.style.transition = 'none'; mapRotDeg = 0; lastCrDeg = 0; rotPane.style.transform = ''; rotPane.style.setProperty('--crt', '0s'); rotPane.style.setProperty('--cr', '0deg'); setRotOrig(0.5); } }, 295);
   }
 }
 function setMapRot(on) {
@@ -1306,6 +1309,8 @@ function setMapRot(on) {
   if (bo) { $('bOrientT').textContent = mapRot ? 'Smjer gore' : 'Sjever gore'; bo.classList.toggle('active', mapRot); }
   L.SVG.prototype.options.padding = mapRot ? 0.85 : 0.1;
   if (map._renderer) { map._renderer.options.padding = mapRot ? 0.85 : 0.1; map._renderer._update(); }
+  if (mapRot && !calOn) { setRotOrig(0.68); if (me) { locLock = true; centerOnMe(map.getZoom(), false); } }
+  else if (calOn) setRotOrig(0.5);
   applyMapRot(true);
   if (mapRot) map.eachLayer(l => l._update && l._tileZoom != null && l._update());
 }
@@ -1535,9 +1540,10 @@ function calToggle(on) {
   calOn = on == null ? !calOn : !!on;
   if (calOn) {
     dr(false); sheet(); closeSearch(); $('scp').style.display = 'none'; $('ip').style.display = 'none'; $('nav').style.display = 'none';
-    compassListen(); if (!mapRot) setMapRot(true); if (me) map.panTo(me);
+    setRotOrig(0.5); compassListen(); if (!mapRot) setMapRot(true); if (me) map.panTo(me, { animate: false });
     $('calHint').textContent = CAL_HINT;
   } else {
+    if (mapRot) { setRotOrig(0.68); if (me && locLock) centerOnMe(map.getZoom(), false); }
     if (info.textContent.trim()) $('ip').style.display = 'block';
     if (navT) $('nav').style.display = 'flex';
     if (calLine) { map.removeLayer(calLine); calLine = null; }
