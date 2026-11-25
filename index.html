@@ -701,7 +701,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
   #calPill.warn { border-color: var(--ember); color: var(--ink); }
   #calPill.warn .dot { background: var(--ember); }
   #compass .ptr { position: absolute; top: 1px; left: 50%; margin-left: -6px; border: 6px solid transparent; border-top: 9px solid var(--ember); }
-  #dial { width: 50px; height: 50px; color: var(--ink); transition: transform .15s linear; }
+  #dial { width: 50px; height: 50px; color: var(--ink); transition: none; will-change: transform; }
   #hdgT { display: block; font-size: 11px; font-weight: 600; }
   #sheet { display: none; z-index: 1100; left: 8px; right: 8px; top: calc(60px + var(--safe-t)); max-height: 55vh; overflow: auto; padding: 12px 14px; max-width: 680px; }
   #ip { display: none; left: 8px; right: 8px; bottom: calc(78px + var(--safe-b)); max-width: 680px; padding: 12px 14px; }
@@ -764,7 +764,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
   #bSun, #bRst { display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 10px 12px; border-radius: 12px; background: var(--sand); color: var(--ink); font-size: 13px; font-weight: 600; }
   #bSun { flex: 1; } #bSun svg { width: 17px; height: 17px; }
   #bCalOk { padding: 10px 18px; border-radius: 12px; font-size: 13px; }
-  .arrow { transition: transform .2s; filter: drop-shadow(0 1px 2px rgba(0,0,0,.5)); }
+  .arrow { transition: none; will-change: transform; filter: drop-shadow(0 1px 2px rgba(0,0,0,.5)); }
 
   #calBar .actM { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 8px; }
   #calBar .actM button { white-space: nowrap; padding: 9px 10px; font-size: 12.5px; }
@@ -945,23 +945,30 @@ const sheet = h => { $('scp').style.display = 'none'; $('sheet').innerHTML = (h 
 
 /* ---------- Lokacija ---------- */
 let me = null, meMarker = null, meCircle = null, watchId = null, follow = false, firstFix = true, mode = null;
+function centerOnMe(z, anim = false) {
+  if (!me) return;
+  const tz = z != null ? z : map.getZoom(), dy = calOn ? 0 : map.getSize().y * 0.18;
+  if (!dy) { map.setView(me, tz, { animate: anim }); return; }
+  const p = map.project(me, tz), ux = dy * Math.sin(mapAng), uy = dy * Math.cos(mapAng);
+  map.setView(map.unproject(L.point(p.x - ux, p.y - uy), tz), tz, { animate: anim });
+}
 function onPos(pos) {
   const c = pos.coords; me = L.latLng(c.latitude, c.longitude); meAlt = c.altitude; meAcc = c.accuracy;
   if (info.textContent === 'Tražim lokaciju…') info.textContent = '';
   updDecl();
-  if (c.heading != null && !isNaN(c.heading) && (c.speed == null || c.speed >= 1.4)) {
-    if (Date.now() - lastOri > 3000) { gpsMode = true; setHdg(c.heading); }   // GPS smjer je pravi smjer: bez korekcije kompasa
-    else if (c.speed != null && c.speed >= 1.4 && Math.abs(lastBeta) < 70 && (c.accuracy == null || c.accuracy < 25)) checkGpsDrift(c.heading);   // telefon u džepu/uspravno ne računa
+  if (c.heading != null && !isNaN(c.heading) && c.heading >= 0 && c.speed != null && c.speed >= 1.5 && (c.accuracy == null || c.accuracy <= 25)) {
+    if (!gotOri) { gpsMode = true; setHdg(c.heading); }
+    else if (Math.abs(lastBeta) < 70) checkGpsDrift(c.heading);
   }
   if (walk) walkSample(c);
-  if (!meMarker) { meCircle = L.circle(me, { radius: c.accuracy, weight: 1, color: '#d93025' }).addTo(map); meMarker = L.marker(me, { icon: ARROW, zIndexOffset: 1000 }).addTo(map); applyHdg(); }
+  if (!meMarker) { meCircle = L.circle(me, { radius: c.accuracy, weight: 1, color: '#d93025' }).addTo(map); meMarker = L.marker(me, { icon: ARROW, zIndexOffset: 1000 }).addTo(map); applyHdg(true); }
   else { meMarker.setLatLng(me); meCircle.setLatLng(me).setRadius(c.accuracy); }
-  if (firstFix) { map.setView(me, 15); firstFix = false; } else if (follow) map.panTo(me);
+  if (firstFix) { centerOnMe(15, false); firstFix = false; } else if (follow) centerOnMe(map.getZoom(), true);
   recPoint(pos); navUpdate(); sosTick(pos);
 }
 function onErr(e) { info.textContent = ({1:'Pristup lokaciji odbijen.',2:'Lokacija nedostupna – uključi GPS.',3:'Isteklo vrijeme.'})[e.code] || e.message; if (!isSecureContext) info.textContent += ' (Potreban je HTTPS.)'; }
 function startWatch() { if (!navigator.geolocation) { info.textContent = 'Geolokacija nije podržana.'; return; }
-  if (watchId !== null) { if (me) map.setView(me, Math.max(map.getZoom(), 15)); return; }
+  if (watchId !== null) { if (me) centerOnMe(Math.max(map.getZoom(), 15), true); return; }
   info.textContent = 'Tražim lokaciju…'; watchId = navigator.geolocation.watchPosition(onPos, onErr, { enableHighAccuracy: true, maximumAge: 3000, timeout: 20000 }); }
 $('bLoc').onclick = () => { startWatch(); if (me) info.innerHTML = '<b>Ti si ovdje:</b> ' + fmtLL(me) + ' (±' + Math.round(meAcc) + ' m)' + (meAlt != null ? '<br>GPS visina: <b>' + Math.round(meAlt) + ' m</b>' : '') + '<br>Smjer: ' + brg(hdg); };
 $('bFollow').onclick = () => { follow = !follow; $('bFollowT').textContent = follow ? 'Prati: on' : 'Prati'; $('bFollow').classList.toggle('gray', !follow); if (follow) startWatch(); };
@@ -1240,7 +1247,7 @@ async function offGo() {
 async function offClear() { if (!confirm('Obrisati sve offline mape?')) return; await idb('tiles', 'readwrite', o => o.clear()); $('oP').textContent = 'Obrisano.'; }
 
 /* ---------- Kompas, strelica, ladica ---------- */
-let hdg = 0, lastOri = 0, meAlt = null, meAcc = null, rPts = [], rSegs = [], busy = false;
+let hdg = 0, hdgAt = 0, lastOri = 0, meAlt = null, meAcc = null, rPts = [], rSegs = [], busy = false;
 const ARROW = L.divIcon({ className: '', iconSize: [36, 36], iconAnchor: [18, 18],
   html: '<svg class="arrow" viewBox="0 0 36 36" width="36" height="36"><path d="M18 3 L29 31 L18 24 L7 31 Z" fill="#d93025" stroke="#fff" stroke-width="2.5" stroke-linejoin="round"/></svg>' });
 /* --- magnetna deklinacija (WMM-2025), radi offline --- */
@@ -1264,18 +1271,32 @@ let calDone = false, calSavedOff = null, calTarget = null, calLine = null, drift
 try { hdgOff = parseFloat(localStorage.getItem('hike_hdgOff')) || 0; declOn = localStorage.getItem('hike_decl') !== '0';
   if (hdgOff && declOn && localStorage.getItem('hike_declv') !== '1') { hdgOff = Math.round((((hdgOff - declDeg + 540) % 360) - 180) * 10) / 10; localStorage.setItem('hike_hdgOff', String(hdgOff)); }   // stara korekcija je već sadržavala deklinaciju
   localStorage.setItem('hike_declv', '1'); if (hdgOff) { calDone = true; calSavedOff = hdgOff; } } catch (e) {}
+let lastCrDeg = 0, hdgTgt = 0, hdgRaf = 0, hdgTs = 0, lastHdgTxt = -1, mapRotAnimUntil = 0;
 function applyMapRot(smooth = false) {
   clearTimeout(rotSnapT);
-  rotPane.style.transition = smooth ? 'transform .25s ease-out' : 'transform .15s linear';
+  if (smooth) {
+    mapRotAnimUntil = Date.now() + 290;
+    rotPane.style.transition = 'transform .28s ease-out';
+    rotPane.style.setProperty('--crt', '.28s ease-out');
+  } else if (Date.now() >= mapRotAnimUntil) {
+    rotPane.style.transition = 'none';
+    rotPane.style.setProperty('--crt', '0s');
+  }
   if (mapRot) {
     const d = (((-hdg - mapRotDeg) % 360) + 540) % 360 - 180;
-    mapRotDeg += d; mapAng = rad(mapRotDeg); rotPane.style.transform = 'rotate(' + mapRotDeg + 'deg)';
+    mapRotDeg += d; mapAng = rad(mapRotDeg);
+    rotPane.style.transform = 'rotate(' + mapRotDeg.toFixed(2) + 'deg) translateZ(0)';
+    if (smooth || Math.abs(mapRotDeg - lastCrDeg) >= 0.4) {
+      lastCrDeg = mapRotDeg;
+      rotPane.style.setProperty('--cr', (-mapRotDeg).toFixed(2) + 'deg');
+    }
   } else {
     const nearest = Math.round(mapRotDeg / 360) * 360;
-    mapRotDeg = nearest; mapAng = 0; rotPane.style.transform = 'rotate(' + nearest + 'deg)';
-    rotSnapT = setTimeout(() => { if (!mapRot) { rotPane.style.transition = 'none'; mapRotDeg = 0; rotPane.style.transform = ''; rotPane.style.setProperty('--crt', '0s'); rotPane.style.setProperty('--cr', '0deg'); } }, 260);
+    mapRotDeg = nearest; mapAng = 0; lastCrDeg = nearest;
+    rotPane.style.transform = 'rotate(' + nearest + 'deg) translateZ(0)';
+    rotPane.style.setProperty('--cr', (-nearest) + 'deg');
+    rotSnapT = setTimeout(() => { if (!mapRot) { rotPane.style.transition = 'none'; mapRotDeg = 0; lastCrDeg = 0; rotPane.style.transform = ''; rotPane.style.setProperty('--crt', '0s'); rotPane.style.setProperty('--cr', '0deg'); } }, 295);
   }
-  rotPane.style.setProperty('--crt', smooth ? '.25s ease-out' : '.15s linear'); rotPane.style.setProperty('--cr', (-mapRotDeg) + 'deg');   // natpisi ostaju uspravni
 }
 function setMapRot(on) {
   mapRot = !!on; if (mapRot) compassListen();
@@ -1343,15 +1364,40 @@ function updRotLabel() {
   if (bc) { $('bCalT').textContent = hdgOff ? 'Poravnaj' + off : 'Poravnaj'; bc.classList.toggle('active', calOn); }
   updCalPill(); updCalMeta();
 }
-function applyHdg() {
-  hdgAt = Date.now();
-  const target = gpsMode ? rawHdg : ((rawHdg + hdgOff + (declOn ? declDeg : 0)) % 360 + 360) % 360;
-  const d = ((target - hdg + 540) % 360) - 180;
-  rot += d; hdg = ((rot % 360) + 360) % 360;
-  $('dial').style.transform = 'rotate(' + (-rot) + 'deg)'; $('hdgT').textContent = brg(hdg); if (navT) navUpdate();
-  const el = meMarker && meMarker.getElement(); if (el && el.firstChild) el.firstChild.style.transform = 'rotate(' + rot + 'deg)';
+let lastNavHdg = 0;
+function renderHdg() {
+  $('dial').style.transform = 'rotate(' + (-rot).toFixed(2) + 'deg)';
+  const rDeg = Math.round(hdg) % 360;
+  if (rDeg !== lastHdgTxt) { lastHdgTxt = rDeg; $('hdgT').textContent = brg(hdg); }
+  const el = meMarker && meMarker.getElement(); if (el && el.firstChild) el.firstChild.style.transform = 'rotate(' + rot.toFixed(2) + 'deg)';
   if (mapRot) applyMapRot(false);
-  updCalMeta();
+  if (navT) { const now = Date.now(); if (now - lastNavHdg > 140) { lastNavHdg = now; navUpdate(); } }
+  if (calOn) updCalMeta();
+}
+function hdgStep(ts) {
+  const dt = hdgTs ? Math.min(50, Math.max(4, ts - hdgTs)) : 16;
+  hdgTs = ts;
+  const err = norm180(hdgTgt - hdg), aErr = Math.abs(err);
+  if (aErr < 0.06) {
+    rot += err; hdg = ((rot % 360) + 360) % 360;
+    renderHdg(); hdgRaf = 0; hdgTs = 0; return;
+  }
+  const tau = aErr < 3 ? 260 : Math.max(70, 260 - (aErr - 3) * 10.5);
+  const k = 1 - Math.exp(-dt / tau);
+  rot += err * k; hdg = ((rot % 360) + 360) % 360;
+  renderHdg();
+  hdgRaf = requestAnimationFrame(hdgStep);
+}
+function applyHdg(snap = false) {
+  hdgAt = Date.now();
+  hdgTgt = gpsMode ? rawHdg : ((rawHdg + hdgOff + (declOn ? declDeg : 0)) % 360 + 360) % 360;
+  if (snap) {
+    if (hdgRaf) { cancelAnimationFrame(hdgRaf); hdgRaf = 0; hdgTs = 0; }
+    const d = norm180(hdgTgt - hdg);
+    rot += d; hdg = ((rot % 360) + 360) % 360;
+    renderHdg(); return;
+  }
+  if (!hdgRaf) { hdgTs = 0; hdgRaf = requestAnimationFrame(hdgStep); }
 }
 function checkGpsDrift(gpsH) {
   const diff = norm180(gpsH - hdg);
@@ -1363,12 +1409,10 @@ function checkGpsDrift(gpsH) {
     if (driftDeg != null && Math.abs(gpsDiff) < 10) { driftDeg = null; updCalPill(); updCalMeta(); }
   }
 }
-function setHdg(h, k = 1) {
+function setHdg(h, snap = false) {
   if (Date.now() < dragHoldUntil) return;
-  const rd = norm180(h - rawHdg);
-  if (gotOri && Math.abs(rd) < 0.6) return;
-  rawRot += rd * k; rawHdg = ((rawRot % 360) + 360) % 360;
-  applyHdg();
+  rawHdg = ((h % 360) + 360) % 360;
+  applyHdg(snap);
 }
 const DIAL_STEP = 8;
 let dialSync = false, lastDialDeg = hdgOff, tickCtx = null;
@@ -1416,7 +1460,7 @@ function setHdgOff(v, fromRef = false, fromDial = false) {
   if (fromRef) { calDone = true; calSavedOff = hdgOff; driftDeg = null; gpsDiff = 0; gpsBadN = 0; }
   try { localStorage.setItem('hike_hdgOff', String(hdgOff)); } catch (e) {}
   if (!fromDial) syncCalDial(fromRef);
-  updRotLabel(); applyHdg();
+  updRotLabel(); applyHdg(fromDial);
 }
 function calReset() {
   calDone = false; calSavedOff = null; calTarget = null; driftDeg = null; gpsDiff = 0; gpsBadN = 0; walk = null;
@@ -1427,7 +1471,7 @@ function calReset() {
 const declTerm = () => declOn ? declDeg : 0;
 function cmean(a) { let sn = 0, cs = 0; a.forEach(x => { sn += Math.sin(rad(x)); cs += Math.cos(rad(x)); }); const n = a.length || 1; return { m: (deg(Math.atan2(sn, cs)) + 360) % 360, sd: deg(Math.sqrt(-2 * Math.log(Math.max(Math.hypot(sn, cs) / n, 1e-6)))) }; }
 function rawAim() {   // sirovi smjer telefona = prosjek posljednjih ~1,2 s (ne trenutna, zagladena vrijednost)
-  const t = Date.now(), b = rawBuf.filter(x => t - x[0] < 1200); if (b.length < 3) { aimSd = null; return rawHdg; } const r = cmean(b.map(x => x[1])); aimSd = r.sd; return r.m; }
+  const t = Date.now(), b = rawBuf.filter(x => t - x[0] < 600); if (b.length < 3) { aimSd = null; return rawHdg; } const r = cmean(b.map(x => x[1])); aimSd = r.sd; return r.m; }
 const aimNote = () => aimSd == null ? '' : ' · stabilnost ±' + aimSd.toFixed(1) + '°' + (aimSd > 4 ? ' (drži telefon mirnije)' : '');
 function updDecl() { const p = me || map.getCenter(), d = wmmDecl(p.lat, p.lng); if (Math.abs(d - declDeg) > 0.02) { declDeg = d; applyHdg(); } updDeclBtn(); }
 function updDeclBtn() { const b = $('bDecl'); if (b) b.textContent = 'Dekl. ' + (declDeg >= 0 ? '+' : '−') + Math.abs(declDeg).toFixed(1).replace('.', ',') + '° ' + (declOn ? '✓' : '✗'); }
@@ -1444,7 +1488,8 @@ function calAlignTo(p) {
   map.panTo(me, { animate: false }); calTarget = tb;
   if (calLine) map.removeLayer(calLine);
   calLine = L.polyline([me, p], { color: '#6b8f4e', weight: 2.5, dashArray: '5 5', opacity: .9 }).addTo(map);
-  setHdgOff(tb - rawAim() - declTerm(), true);
+  const aim = rawAim(); if (aimSd != null && aimSd > 10) { $('calHint').textContent = 'Telefon se pomjera (±' + Math.round(aimSd) + '°) – umiri ruku na 1 sekundu pa dodirni ponovo.'; return; }
+  setHdgOff(tb - aim - declTerm(), true);
   $('calHint').textContent = 'Poravnano prema mjestu (' + fmtD(d) + ', ' + brg(tb) + '). Očekivana greška ≈ ±' + exp.toFixed(1) + '°' + aimNote() + '. Pritisni „Gotovo“.';
   const f = L.circleMarker(p, { radius: 13, color: '#6b8f4e', weight: 2.5, fill: false }).addTo(map);
   setTimeout(() => map.removeLayer(f), 1400);
@@ -1477,9 +1522,11 @@ function calSun(shadow) {
   if (shadow ? s.alt < 2 : s.alt < -1) { $('calHint').textContent = (shadow ? 'Sunce je prenisko (' + Math.round(s.alt) + '°) da baci jasnu sjenu' : 'Sunce je trenutno ispod horizonta') + ' — poravnaj po objektu na mapi, po hodanju ili povuci skalu.'; return; }
   if (shadow && s.alt > 78) { $('calHint').textContent = 'Sunce je skoro u zenitu (' + Math.round(s.alt) + '°) pa je sjena prekratka za nišanjenje – poravnaj po objektu ili po hodanju.'; return; }
   if (!shadow && s.alt > 65) { $('calHint').textContent = 'Sunce je previsoko (' + Math.round(s.alt) + '°) za nišanjenje – greška bi bila velika. Koristi „Po sjeni“.'; return; }
+  const aim = rawAim();
+  if (aimSd != null && aimSd > 10) { $('calHint').textContent = 'Telefon se pomjera (±' + Math.round(aimSd) + '°) – umiri ruku na 1 sekundu pa pritisni ponovo.'; return; }
   const az = (s.az + (shadow ? 180 : 0)) % 360; calTarget = az;
   if (calLine) { map.removeLayer(calLine); calLine = null; }
-  setHdgOff(az - rawAim() - declTerm(), true);
+  setHdgOff(az - aim - declTerm(), true);
   $('calHint').textContent = (shadow ? 'Poravnano po sjeni' : 'Poravnano prema Suncu') + (me ? '' : ' (približno – po centru mape; uključi GPS)') + aimNote() +
     (shadow && s.alt < 5 ? '. Sunce je nisko (' + Math.round(s.alt) + '°) – provjeri je li sjena oštra' : '') +
     (!shadow && s.alt > 45 ? '. Sunce je visoko (' + Math.round(s.alt) + '°) pa je nišanjenje manje tačno – bolje „Po sjeni“' : '') + '. Pritisni „Gotovo“.';
@@ -1488,7 +1535,7 @@ function calToggle(on) {
   calOn = on == null ? !calOn : !!on;
   if (calOn) {
     dr(false); sheet(); closeSearch(); $('scp').style.display = 'none'; $('ip').style.display = 'none'; $('nav').style.display = 'none';
-    if (!mapRot) setMapRot(true); if (me) map.panTo(me);
+    compassListen(); if (!mapRot) setMapRot(true); if (me) map.panTo(me);
     $('calHint').textContent = CAL_HINT;
   } else {
     if (info.textContent.trim()) $('ip').style.display = 'block';
@@ -1526,12 +1573,12 @@ function calToggle(on) {
   w.addEventListener('pointerup', () => { md = false; }); w.addEventListener('pointercancel', () => { md = false; });
 })();
 $('bCal').onclick = () => calToggle(true);
-updRotLabel(); if (hdgOff) applyHdg();
+updRotLabel(); if (hdgOff) applyHdg(true);
 function oriEvt(e) { let h = null;
   if (e.type === 'deviceorientationabsolute' && e.alpha != null) hasAbs = true;
   else if (hasAbs && e.webkitCompassHeading == null) return;
-  if (e.webkitCompassAccuracy != null) { sensAcc = e.webkitCompassAccuracy; updCalPill(); }
-  if (e.webkitCompassHeading != null) h = e.webkitCompassHeading;
+  if (e.webkitCompassAccuracy != null) { sensAcc = e.webkitCompassAccuracy; updCalPill(); if (e.webkitCompassAccuracy < 0) return; }
+  if (e.webkitCompassHeading != null && !isNaN(e.webkitCompassHeading)) h = e.webkitCompassHeading;
   else if ((e.absolute || e.type === 'deviceorientationabsolute') && e.alpha != null) {
     const B = e.beta || 0, A = rad(e.alpha), Br = rad(B), G = rad(e.gamma || 0), sA = Math.sin(A), cA = Math.cos(A), sB = Math.sin(Br), cB = Math.cos(Br), sG = Math.sin(G), cG = Math.cos(G);
     const tE = -sA * cB, tN = cA * cB, bE = -cA * sG - sA * sB * cG, bN = -sA * sG + cA * sB * cG, tl = Math.hypot(tE, tN) || 1, bl = Math.hypot(bE, bN) || 1, w = Math.max(0, Math.min(1, (B - 55) / 35));
@@ -1540,7 +1587,7 @@ function oriEvt(e) { let h = null;
   if (h == null) return;
   h += (screen.orientation && screen.orientation.angle) || window.orientation || 0;
   const hh = (h % 360 + 360) % 360; rawBuf.push([Date.now(), hh]); if (rawBuf.length > 60) rawBuf.shift(); if (e.beta != null) lastBeta = e.beta;
-  gpsMode = false; setHdg(hh, gotOri ? 0.3 : 1); gotOri = true; lastOri = Date.now(); }
+  gpsMode = false; const first = !gotOri; gotOri = true; lastOri = Date.now(); setHdg(hh, first); }
 let oriOn = false;
 async function compassListen() {
   if (oriOn) return;
@@ -1597,7 +1644,7 @@ map.on('zoom move', updScale); updScale();
 document.addEventListener('gesturestart', e => e.preventDefault());
 
 /* ---------- Teren: markeri, vrati me do, zalazak sunca, hitna pozicija ---------- */
-let hdgAt = 0, pickCb = null, routeEstMs = 0, MK = [], mkDraft = null, navT = null, navLine = null, navDot = null, navRot = 0, sunOff = 0, sosOn = false, lastFix = null, lastSave = 0;
+let pickCb = null, routeEstMs = 0, MK = [], mkDraft = null, navT = null, navLine = null, navDot = null, navRot = 0, sunOff = 0, sosOn = false, lastFix = null, lastSave = 0;
 const mkLayer = L.layerGroup().addTo(map), nfd = (x, n) => x.toFixed(n).replace('.', ',');
 const MI = {
   parking: '<rect x="4" y="4" width="16" height="16" rx="3"/><path d="M10 16V8h3a2.5 2.5 0 0 1 0 5h-3"/>',
