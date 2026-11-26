@@ -1027,7 +1027,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
 
   #gScreen #ip {
     left: auto !important; right: 0 !important; top: 44px !important; bottom: auto !important;
-    width: 64% !important; max-width: 250px !important; max-height: 55% !important; overflow-y: auto;
+    width: 66% !important; max-width: 260px !important; max-height: 70% !important; overflow-y: auto;
     border-radius: 0 !important; padding: 8px 10px 9px !important;
     background: rgba(16, 18, 19, .94) !important; color: #e8ece9 !important;
     backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
@@ -1305,13 +1305,17 @@ async function getElev(pts) { const out = [];
 const safeElev = p => getElev(p).catch(() => null);
 
 function drawProfile(el) {
-  prof.style.display = 'block'; const dpr = devicePixelRatio || 1, w = prof.clientWidth, h = prof.clientHeight;
+  if (!el || el.length < 2) return;
+  $('ip').style.display = 'block'; prof.style.display = 'block';
+  const dpr = devicePixelRatio || 1, w = prof.clientWidth || 220, h = prof.clientHeight || 80;
   prof.width = w * dpr; prof.height = h * dpr; const g = prof.getContext('2d'); g.scale(dpr, dpr);
-  const mn = Math.min(...el), mx = Math.max(...el), rg = Math.max(mx - mn, 1); g.beginPath();
-  el.forEach((v, i) => { const x = i / (el.length - 1) * w, y = h - 4 - (v - mn) / rg * (h - 14); i ? g.lineTo(x, y) : g.moveTo(x, y); });
-  g.strokeStyle = '#e8710a'; g.lineWidth = 2; g.stroke(); g.lineTo(w, h); g.lineTo(0, h); g.closePath(); g.fillStyle = 'rgba(232,113,10,.25)'; g.fill();
-  g.fillStyle = matchMedia('(prefers-color-scheme: dark)').matches ? '#ddd' : '#333'; g.font = '11px system-ui';
-  g.fillText(Math.round(mx) + ' m', 4, 11); g.fillText(Math.round(mn) + ' m', 4, h - 6); }
+  const mn = Math.min(...el), mx = Math.max(...el), rg = Math.max(mx - mn, 1);
+  g.clearRect(0, 0, w, h); g.fillStyle = 'rgba(255,255,255,.04)'; g.fillRect(0, 0, w, h);
+  g.beginPath();
+  el.forEach((v, i) => { const x = i / (el.length - 1) * w, y = h - 6 - (v - mn) / rg * (h - 20); i ? g.lineTo(x, y) : g.moveTo(x, y); });
+  g.strokeStyle = '#f0622b'; g.lineWidth = 2.2; g.stroke(); g.lineTo(w, h); g.lineTo(0, h); g.closePath(); g.fillStyle = 'rgba(240,98,43,.28)'; g.fill();
+  g.fillStyle = '#f0f4f1'; g.font = '600 11px ui-monospace, Menlo, system-ui';
+  g.fillText(Math.round(mx) + ' m', 5, 13); g.fillText(Math.round(mn) + ' m', 5, h - 5); }
 
 const dot = (ll, col, g) => L.circleMarker(ll, { radius: 6, color: '#fff', weight: 2, fillColor: col || '#e8710a', fillOpacity: 1 }).addTo(g || tools);
 const label = (ll, html) => L.tooltip({ permanent: true, direction: 'center', className: 'lbl', opacity: 1 }).setLatLng(ll).setContent('<span class="cr">' + html + '</span>').addTo(tools);
@@ -1321,6 +1325,7 @@ const sheet = h => { $('scp').style.display = 'none'; $('sheet').innerHTML = (h 
 let me = null, meMarker = null, meCircle = null, watchId = null, follow = false, firstFix = true, mode = null;
 function centerOnMe(z, anim = false) {
   if (!me) return;
+  if (mapRot && !calOn) setRotOrig(0.68);
   const tz = z != null ? z : map.getZoom(), h = map.getSize().y;
   if (calOn) { map.setView(me, tz, { animate: anim }); return; }
   const off = (0.68 - rotOrigY) * h, ux = off * Math.sin(mapAng), uy = (rotOrigY - 0.5) * h + off * Math.cos(mapAng);
@@ -1379,12 +1384,11 @@ async function profile(total, html) {
   const [up, dn] = asc(el);
   info.innerHTML = html + '<br>Uspon: <b>+' + Math.round(up) + ' m</b> · Spust: <b>−' + Math.round(dn) + ' m</b><br>Min/Max: ' + Math.round(Math.min(...el)) + ' / ' + Math.round(Math.max(...el)) + ' m'; drawProfile(el); }
 async function bearingTo(p) {
-  let from = me; if (!from) { if (!bStart) { bStart = p; dot(p, '#1a73e8'); info.textContent = 'Početak postavljen. Dodirni odredište.'; return; } from = bStart; }
-  tools.clearLayers(); dot(from, '#1a73e8'); dot(p); L.polyline([from, p], { color: '#e8710a', weight: 3, dashArray: '8 6' }).addTo(tools);
-  const d = dist(from, p), b = bearing(from, p); label(L.latLng((from.lat + p.lat) / 2, (from.lng + p.lng) / 2), brg(b) + ' · ' + fmtD(d));
-  const html = '<b class="big">Bearing: ' + brg(b) + '</b><br>Udaljenost: <b>' + fmtD(d) + '</b><br>Povratni: ' + brg(bearing(p, from)) + '<br>Odredište: ' + fmtLL(p);
-  info.innerHTML = html + '<br><i>Računam visine…</i>'; const my = ++token, el = await safeElev([from, p]); if (my !== token) return; if (!me) bStart = null;
-  info.innerHTML = html + (el ? '<br>Visina: ' + Math.round(el[0]) + ' → <b>' + Math.round(el[1]) + ' m</b> (' + (el[1] >= el[0] ? '+' : '−') + Math.abs(Math.round(el[1] - el[0])) + ' m)' : ''); }
+  let from = me; if (!from) { if (!bStart) { bStart = p; tools.clearLayers(); dot(p, '#2e7d32'); label(p, 'A'); info.innerHTML = ''; return; } from = bStart; bStart = null; }
+  tools.clearLayers(); dot(from, '#2e7d32'); dot(p, '#f0622b'); L.polyline([from, p], { color: '#f0622b', weight: 3.5, dashArray: '8 6' }).addTo(tools);
+  const d = dist(from, p), b = bearing(from, p);
+  label(L.latLng((from.lat + p.lat) / 2, (from.lng + p.lng) / 2), 'Azimut ' + brg(b) + ' · ' + fmtD(d));
+  info.innerHTML = ''; prof.style.display = 'none'; }
 function radiusClick(p) { if (!rCenter) { tools.clearLayers(); rCenter = p; dot(p, '#1a73e8'); info.textContent = 'Centar postavljen. Dodirni drugu tačku.'; return; } drawRadius(rCenter, dist(rCenter, p), p); rCenter = null; }
 function drawRadius(c, r, edge) { tools.clearLayers(); dot(c, '#1a73e8');
   const ci = L.circle(c, { radius: r, color: '#e8710a', weight: 3, fillOpacity: .08 }).addTo(tools);
@@ -1988,8 +1992,9 @@ async function routeSeg(a, b, pf) {
     const o = (await r.json()).routes[0]; return { pts: o.geometry.coordinates.map(c => ({ lat: c[1], lng: c[0], alt: null })), d: o.distance }; };
   for (const f of pf === 'trail' ? [brouter, osm('foot')] : pf === 'foot' ? [osm('foot')] : [osm('car')]) { try { return await f(); } catch (e) {} }
   return null; }
-function routeDraw() { tools.clearLayers(); rPts.forEach((p, i) => dot(p, i ? '#d9702a' : '#2e7d32'));
-  rSegs.forEach(s => { L.polyline(s.pts.map(p => [p.lat, p.lng]), { color: '#d9702a', weight: 5, opacity: .9 }).addTo(tools); const m = s.pts[s.pts.length >> 1]; label([m.lat, m.lng], fmtD(s.d)); }); }
+function routeDraw() { tools.clearLayers();
+  rSegs.forEach(s => { L.polyline(s.pts.map(p => [p.lat, p.lng]), { color: '#f0622b', weight: 5, opacity: .92 }).addTo(tools); const m = s.pts[s.pts.length >> 1]; label([m.lat, m.lng], fmtD(s.d)); });
+  rPts.forEach((p, i) => { dot(p, i === 0 ? '#2e7d32' : '#d93025'); label(p, String.fromCharCode(65 + (i % 26))); }); }
 async function routeAdd(p) {
   if (busy) return; rPts.push(p); routeDraw(); if (rPts.length < 2) { info.textContent = 'Početak (A) postavljen. Dodirni odredište (B).'; return; }
   busy = true; info.innerHTML = '<i>Tražim stazu…</i>'; const seg = await routeSeg(rPts[rPts.length - 2], p, $('rtProf').value); busy = false;
@@ -2410,7 +2415,7 @@ function gMainItems() {
 function gSubItems(id) {
   if (id === 'measure') return [
     { t: 'Mjeri udaljenost', s: 'Krstić + OK', fn: () => { gMenuClose(); locLock = false; setMode('measure'); info.textContent = 'Pomjeri krstić na tačke i pritiskaj OK.'; gUpdateCross(); gTickHud(); } },
-    { t: 'Azimut', s: 'Smjer do cilja (krstić)', fn: () => { gMenuClose(); locLock = false; setMode('bearing'); info.textContent = 'Pomjeri krstić na cilj i pritisni OK.'; gUpdateCross(); gTickHud(); } },
+    { t: 'Azimut', s: 'Linija na mapi (krstić)', fn: () => { gMenuClose(); locLock = false; setMode('bearing'); info.innerHTML = ''; prof.style.display = 'none'; gUpdateCross(); gTickHud(); } },
     { t: 'Nadmorska visina', s: 'Krstić + OK', fn: () => { gMenuClose(); locLock = false; setMode('elev'); info.textContent = 'Pomjeri krstić na tačku i pritisni OK.'; gUpdateCross(); gTickHud(); } },
     { t: 'Dionica A→B po stazi', s: 'Krstić A pa B + OK', fn: () => { gMenuClose(); locLock = false; setMode('route'); info.textContent = 'Pomjeri krstić na A pa OK, zatim B pa OK.'; gUpdateCross(); gTickHud(); } }
   ];
@@ -2522,8 +2527,8 @@ function gKey(k) {
   const shOpen = $('sheet').style.display === 'block' || (!sbOpen && shItems.length > 0);
   if (k === 'sos') { gHaptic('sos'); calTick(true); gMenuClose(); gObjPick = false; if (calOn) calToggle(false); sosOpen(); return; }
   if (k === 'menu') { gBeep(true); gMenuToggle(); return; }
-  if (k === 'zin') { gBeep(false); map.zoomIn(1); return; }
-  if (k === 'zout') { gBeep(false); map.zoomOut(1); return; }
+  if (k === 'zin') { gBeep(false); if (locLock && me) centerOnMe(Math.min(19, map.getZoom() + 1), true); else map.zoomIn(1); return; }
+  if (k === 'zout') { gBeep(false); if (locLock && me) centerOnMe(Math.max(2, map.getZoom() - 1), true); else map.zoomOut(1); return; }
   if (k === 'back') {
     gBeep(false);
     if (menuOpen) {
@@ -2538,9 +2543,9 @@ function gKey(k) {
       gCloseSearch(); return;
     }
     if ($('sheet').style.display === 'block') { sheet(); return; }
-    if (pickCb) { pickCb = null; info.innerHTML = ''; gUpdateCross(); gTickHud(); return; }
-    if (mode) { setMode(mode); gUpdateCross(); gTickHud(); return; }
-    if (info.textContent.trim()) { info.innerHTML = ''; prof.style.display = 'none'; gSheetHighlight(0); return; }
+    if (info.textContent.trim()) { info.innerHTML = ''; prof.style.display = 'none'; gSheetHighlight(0); gTickHud(); return; }
+    if (pickCb) { pickCb = null; gUpdateCross(); gTickHud(); return; }
+    if (mode) { mode = null; Object.values(btns).forEach(b => b.classList.remove('active')); $('radRow').style.display = 'none'; gUpdateCross(); gTickHud(); return; }
     if (!locLock && me) { $('bLoc').click(); gUpdateCross(); gTickHud(); return; }
     return;
   }
@@ -2715,8 +2720,10 @@ function gToggleFs(forceOn) {
     }
   } catch (e) {}
 }
-document.addEventListener('fullscreenchange', () => setTimeout(() => map.invalidateSize(), 120));
-document.addEventListener('webkitfullscreenchange', () => setTimeout(() => map.invalidateSize(), 120));
+const gRefit = () => { map.invalidateSize(); if (locLock && me) centerOnMe(map.getZoom(), false); };
+document.addEventListener('fullscreenchange', () => setTimeout(gRefit, 120));
+document.addEventListener('webkitfullscreenchange', () => setTimeout(gRefit, 120));
+addEventListener('resize', () => setTimeout(gRefit, 120));
 $('gDeck').addEventListener('click', () => {
   if (mapRot && !oriOn) compassListen();
   if (!gFsTried && !gIsFs() && gCanFs()) { gFsTried = true; gToggleFs(true); }
@@ -2724,7 +2731,7 @@ $('gDeck').addEventListener('click', () => {
 $('gDeck').addEventListener('touchend', () => {
   if (mapRot && !oriOn) compassListen();
 }, { passive: true });
-try { setMapRot(true); } catch (e) {} setTimeout(() => map.invalidateSize(), 150);
+try { setMapRot(true); } catch (e) {} setTimeout(gRefit, 180);
 </script>
 
 </body>
