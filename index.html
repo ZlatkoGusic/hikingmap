@@ -1413,7 +1413,7 @@ async function bearingTo(p) {
   const d = dist(from, p), b = bearing(from, p);
   label(L.latLng((from.lat + p.lat) / 2, (from.lng + p.lng) / 2), 'Azimut ' + brg(b) + ' · ' + fmtD(d));
   info.innerHTML = ''; prof.style.display = 'none'; }
-function radiusClick(p) { if (!rCenter) { tools.clearLayers(); rCenter = p; dot(p, '#1a73e8'); info.textContent = 'Centar postavljen. Dodirni drugu tačku.'; return; } drawRadius(rCenter, dist(rCenter, p), p); rCenter = null; }
+function radiusClick(p) { if (!rCenter) { tools.clearLayers(); rCenter = p; dot(p, '#2e7d32'); label(p, 'C'); info.innerHTML = ''; gTickHud(); return; } drawRadius(rCenter, dist(rCenter, p), p); rCenter = null; }
 function drawRadius(c, r, edge) { tools.clearLayers(); dot(c, '#1a73e8');
   const ci = L.circle(c, { radius: r, color: '#e8710a', weight: 3, fillOpacity: .08 }).addTo(tools);
   let h = '<b class="big">Radius: ' + fmtD(r) + '</b><br>Promjer: ' + fmtD(2 * r) + ' · Obim: ' + fmtD(2 * Math.PI * r) + '<br>Površina: ' + (Math.PI * r * r / 1e6).toFixed(3) + ' km²';
@@ -2009,35 +2009,94 @@ function tab(i) { document.querySelectorAll('.pane').forEach((p, j) => p.style.d
 tab(0);
 new MutationObserver(() => { $('ip').style.display = info.textContent.trim() ? 'block' : 'none'; }).observe(info, { childList: true, subtree: true, characterData: true });
 
-/* ---------- Dionica A→B po stazi / putu ---------- */
-async function routeSeg(a, b, pf) {
-  const brouter = async () => { const r = await fetch('https://brouter.de/brouter?lonlats=' + a.lng + ',' + a.lat + '|' + b.lng + ',' + b.lat + '&profile=hiking-mountain&alternativeidx=0&format=geojson'); if (!r.ok) throw 0;
-    const f = (await r.json()).features[0]; return { pts: f.geometry.coordinates.map(c => ({ lat: c[1], lng: c[0], alt: c[2] })), d: +f.properties['track-length'] }; };
-  const osm = k => async () => { const r = await fetch('https://routing.openstreetmap.de/routed-' + k + '/route/v1/driving/' + a.lng + ',' + a.lat + ';' + b.lng + ',' + b.lat + '?overview=full&geometries=geojson'); if (!r.ok) throw 0;
-    const o = (await r.json()).routes[0]; return { pts: o.geometry.coordinates.map(c => ({ lat: c[1], lng: c[0], alt: null })), d: o.distance }; };
-  for (const f of pf === 'trail' ? [brouter, osm('foot')] : pf === 'foot' ? [osm('foot')] : [osm('car')]) { try { return await f(); } catch (e) {} }
-  return null; }
+/* ---------- Dionica A→B po stazi / putu (do 3 alternative) ---------- */
+async function routeSegAlts(a, b, pf) {
+  const brouterIdx = async idx => {
+    const c = new AbortController(), tm = setTimeout(() => c.abort(), 8500);
+    try {
+      const r = await fetch('https://brouter.de/brouter?lonlats=' + a.lng + ',' + a.lat + '|' + b.lng + ',' + b.lat + '&profile=hiking-mountain&alternativeidx=' + idx + '&format=geojson', { signal: c.signal });
+      if (!r.ok) throw 0;
+      const f = (await r.json()).features[0];
+      const pts = f.geometry.coordinates.map(x => ({ lat: x[1], lng: x[0], alt: x[2] }));
+      const d = +f.properties['track-length'] || stats(pts).d;
+      const [up, dn] = asc(pts.map(p => p.alt));
+      return { pts, d, up, dn, ms: (d / 5000 + up / 600) * 3600000 };
+    } finally { clearTimeout(tm); }
+  };
+  const osm = k => async () => {
+    const r = await fetch('https://routing.openstreetmap.de/routed-' + k + '/route/v1/driving/' + a.lng + ',' + a.lat + ';' + b.lng + ',' + b.lat + '?overview=full&geometries=geojson');
+    if (!r.ok) throw 0;
+    const o = (await r.json()).routes[0];
+    const pts = o.geometry.coordinates.map(x => ({ lat: x[1], lng: x[0], alt: null }));
+    return { pts, d: o.distance, up: 0, dn: 0, ms: (o.distance / 5000) * 3600000 };
+  };
+  if (pf === 'trail') {
+    const res = await Promise.allSettled([0, 1, 2].map(brouterIdx));
+    const raw = res.filter(x => x.status === 'fulfilled' && x.value && x.value.pts.length > 1).map(x => x.value);
+    const uniq = [];
+    for (const r of raw) {
+      const mid = r.pts[r.pts.length >> 1];
+      if (!uniq.some(u => Math.abs(u.d - r.d) < 40 && dist(u.pts[u.pts.length >> 1], mid) < 45)) uniq.push(r);
+    }
+    if (uniq.length) {
+      uniq.sort((x, y) => x.ms - y.ms);
+      return uniq;
+    }
+    try { return [await osm('foot')()]; } catch (e) { return null; }
+  }
+  try { return [await osm(pf === 'foot' ? 'foot' : 'car')()]; } catch (e) { return null; }
+}
+function routePickAlt(idx) {
+  const seg = rSegs[rSegs.length - 1];
+  if (!seg || !seg.alts || !seg.alts[idx]) return;
+  seg.altIdx = idx; seg.pts = seg.alts[idx].pts; seg.d = seg.alts[idx].d;
+  routeDraw(); routeInfo();
+}
 function routeDraw() { tools.clearLayers();
-  rSegs.forEach(s => { L.polyline(s.pts.map(p => [p.lat, p.lng]), { color: '#f0622b', weight: 5, opacity: .92 }).addTo(tools); const m = s.pts[s.pts.length >> 1]; label([m.lat, m.lng], fmtD(s.d)); });
-  rPts.forEach((p, i) => { dot(p, i === 0 ? '#2e7d32' : '#d93025'); label(p, String.fromCharCode(65 + (i % 26))); }); }
+  rSegs.forEach(s => {
+    if (s.alts && s.alts.length > 1) {
+      s.alts.forEach((al, idx) => {
+        if (idx === (s.altIdx || 0)) return;
+        L.polyline(al.pts.map(p => [p.lat, p.lng]), { color: '#6b7d87', weight: 3.5, dashArray: '6 6', opacity: .8 }).addTo(tools);
+      });
+    }
+    L.polyline(s.pts.map(p => [p.lat, p.lng]), { color: '#f0622b', weight: 5, opacity: .94 }).addTo(tools);
+    const m = s.pts[s.pts.length >> 1]; label([m.lat, m.lng], fmtD(s.d));
+  });
+  rPts.forEach((p, i) => { dot(p, i === 0 ? '#2e7d32' : '#d93025'); label(p, String.fromCharCode(65 + (i % 26))); });
+}
 async function routeAdd(p) {
   if (busy) return; rPts.push(p); routeDraw(); if (rPts.length < 2) { info.innerHTML = ''; gTickHud(); return; }
-  busy = true; info.innerHTML = '<i>Tražim stazu…</i>'; const seg = await routeSeg(rPts[rPts.length - 2], p, $('rtProf').value); busy = false;
-  if (!seg) { rPts.pop(); routeDraw(); info.textContent = 'Staza nije nađena (treba internet ili nema puta). Probaj drugi profil.'; return; }
-  rSegs.push(seg); routeDraw(); routeInfo(); }
-function routeUndo() { rPts.pop(); rSegs.pop(); routeDraw(); if (rSegs.length) routeInfo(); else info.textContent = rPts.length ? 'Početak (A) postavljen.' : 'Dionica obrisana.'; }
+  busy = true; info.innerHTML = '<i>Tražim najbolje staze (do 3 opcije)…</i>';
+  const alts = await routeSegAlts(rPts[rPts.length - 2], p, $('rtProf').value); busy = false;
+  if (!alts || !alts.length) { rPts.pop(); routeDraw(); info.textContent = 'Staza nije nađena (treba internet ili nema puta).'; return; }
+  rSegs.push({ pts: alts[0].pts, d: alts[0].d, alts, altIdx: 0 });
+  routeDraw(); routeInfo();
+}
+function routeUndo() { rPts.pop(); rSegs.pop(); routeDraw(); if (rSegs.length) routeInfo(); else info.innerHTML = ''; }
 async function routeInfo() {
   const all = rSegs.flatMap(s => s.pts), d = rSegs.reduce((a, s) => a + s.d, 0), a = rPts[0], b = rPts[rPts.length - 1];
-  const head = () => '<b class="big">Dionica: ' + fmtD(d) + '</b> (' + rSegs.length + ' dio' + (rSegs.length > 1 ? 'nice' : 'nica').replace('dionica', '') + ')<br>Zračno A→kraj: ' + fmtD(dist(a, b)) + ' · bearing <b>' + brg(bearing(a, b)) + '</b>';
-  const btn = '<br><button onclick="routeUndo()">↶ Nazad</button><button onclick="navFollowRoute()">▶ Prati rutu</button><button onclick="routeSave()">💾 Spremi rutu</button>';
+  const lastSeg = rSegs[rSegs.length - 1];
+  const altBtns = lastSeg && lastSeg.alts && lastSeg.alts.length > 1
+    ? '<div class="row" style="margin:5px 0">' + lastSeg.alts.map((al, i) =>
+        '<button class="' + (i === (lastSeg.altIdx || 0) ? '' : 'gray') + '" onclick="routePickAlt(' + i + ')">' + (i === 0 ? '★ ' : '') + 'Staza ' + (i + 1) + ' (' + fmtD(al.d) + ')</button>'
+      ).join('') + '</div>' : '';
+  const head = () => '<b class="big">Dionica: ' + fmtD(d) + '</b>' + (lastSeg && lastSeg.alts && lastSeg.alts.length > 1 ? ' <small>(' + ((lastSeg.altIdx || 0) + 1) + '/' + lastSeg.alts.length + ')</small>' : '') +
+    '<br>Zračno A→kraj: ' + fmtD(dist(a, b)) + ' · ' + brg(bearing(a, b));
+  const btn = altBtns + '<div class="row"><button onclick="navFollowRoute()">▶ Prati rutu</button><button class="gray" onclick="routeSave()">Spremi</button><button class="gray" onclick="routeUndo()">↶ Nazad</button></div>';
   info.innerHTML = head() + '<br><i>Računam visine…</i>' + btn; const my = ++token;
   let el = all.every(p => p.alt != null) ? all.map(p => p.alt) : null;
   if (!el) { const n = Math.min(100, all.length), S = []; for (let i = 0; i < n; i++) S.push(all[Math.round(i * (all.length - 1) / Math.max(1, n - 1))]); el = await safeElev(S); }
   if (my !== token) return; if (!el) { info.innerHTML = head() + btn; return; }
   const [up, dn] = asc(el), h = (d / 5000 + up / 600) * 3600000; routeEstMs = h;
-  info.innerHTML = head() + '<br>Uspon <b>+' + Math.round(up) + ' m</b> · Spust <b>−' + Math.round(dn) + ' m</b><br>Procjena hoda: ≈ <b>' + fmtT(h).slice(0, -3) + ' h</b> (Naismith)' + btn; drawProfile(el); }
-async function routeSave() { const t = { id: 'trk' + Date.now(), name: prompt('Naziv dionice:', 'Dionica ' + new Date().toLocaleDateString()) || 'Dionica', pts: rSegs.flatMap(s => s.pts), date: Date.now() };
-  await dbSet('tracks', t.id, t); trackCache[t.id] = t; info.innerHTML += '<br>✅ Spremljeno u 🗂 Rute (odatle izvoz u GPX).'; }
+  info.innerHTML = head() + '<br>Uspon <b>+' + Math.round(up) + ' m</b> · Spust <b>−' + Math.round(dn) + ' m</b><br>Hod (Naismith): ≈ <b>' + fmtT(h).slice(0, -3) + ' h</b>' + btn;
+  drawProfile(el);
+}
+async function routeSave() {
+  const nm = 'Dionica ' + new Date().toLocaleDateString() + ' ' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  const t = { id: 'trk' + Date.now(), name: nm, pts: rSegs.flatMap(s => s.pts), date: Date.now() };
+  await dbSet('tracks', t.id, t); trackCache[t.id] = t; info.innerHTML += '<br>✓ Spremljeno u Rute.';
+}
 
 /* ---------- Mjerilo (1:25 000 …) ---------- */
 const MPP0 = 156543.03392, CSSPX = 0.0254 / 96;
@@ -2317,7 +2376,7 @@ startWatch();
 /* === PURE BUTTON-ONLY HANDHELD CONTROLLER === */
 ['dragging','touchZoom','doubleClickZoom','scrollWheelZoom','boxZoom','tapHold'].forEach(h => map[h] && map[h].disable());
 $('q').setAttribute('readonly', 'readonly'); $('q').setAttribute('inputmode', 'none');
-let gStack = [], gIdx = 0, gLayIdx = 0, gSheetIdx = 0, gObjPick = false, gDispMode = 0, gSosHintUntil = 0, gNavExitUntil = 0, gSnapMk = null, gSnapCool = 0, gReturnMenu = null;
+let gStack = [], gIdx = 0, gLayIdx = 0, gSheetIdx = 0, gObjPick = false, gDispMode = 0, gSosHintUntil = 0, gNavExitUntil = 0, gSnapMk = null, gSnapTrk = null, gSnapCool = 0, gReturnMenu = null;
 let gKbdOn = true, gKr = 0, gKc = 0, gMkKbdOn = false, gMkKr = 0, gMkKc = 0;
 function gMkKbdRender() {
   const el = $('gMkKbd'); if (!el) return;
@@ -2431,7 +2490,7 @@ function gViewAtCross(ll, z, anim = false) {
   map.setView(map.unproject(L.point(p.x - ox, p.y - oy), tz), tz, { animate: anim });
 }
 function gCheckSnap() {
-  if (locLock || gAimActive() || calOn || !MK.length || Date.now() < gSnapCool) { gSnapMk = null; return; }
+  if (locLock || gAimActive() || calOn || Date.now() < gSnapCool) { gSnapMk = null; gSnapTrk = null; return; }
   const c = gCrossLatLng(), cp = map.latLngToContainerPoint(c);
   let best = null, bestD = 26;
   for (const m of MK) {
@@ -2439,20 +2498,54 @@ function gCheckSnap() {
     const d = cp.distanceTo(mp);
     if (d < bestD) { bestD = d; best = m; }
   }
-  if (best && best !== gSnapMk) {
-    gSnapMk = best;
-    gViewAtCross(L.latLng(best.lat, best.lng), map.getZoom(), true);
-    gHaptic('tap');
-  } else if (!best) {
-    gSnapMk = null;
+  if (best) {
+    gSnapTrk = null;
+    if (best !== gSnapMk) { gSnapMk = best; gViewAtCross(L.latLng(best.lat, best.lng), map.getZoom(), true); gHaptic('tap'); }
+    return;
   }
+  gSnapMk = null;
+  if (curTrack && curTrack.pts && curTrack.pts.length > 1 && trk.getLayers().length && !navT) {
+    const pts = curTrack.pts, step = Math.max(1, Math.floor(pts.length / 220));
+    let bestP = null, bestTD = 24;
+    for (let i = 0; i < pts.length; i += step) {
+      const pp = map.latLngToContainerPoint(L.latLng(pts[i].lat, pts[i].lng));
+      const d = cp.distanceTo(pp);
+      if (d < bestTD) { bestTD = d; bestP = pts[i]; }
+    }
+    if (bestP) {
+      if (!gSnapTrk) { gSnapTrk = curTrack; gViewAtCross(L.latLng(bestP.lat, bestP.lng), map.getZoom(), true); gHaptic('tap'); }
+      return;
+    }
+  }
+  gSnapTrk = null;
+}
+function trkCard(t) {
+  if (!t) return;
+  const s = stats(t.pts), h = (s.d / 5000 + s.up / 600) * 3600000;
+  sheet('<b>' + esc(t.name) + '</b><div class="kv">Dužina: <b>' + fmtD(s.d) + '</b>' +
+    (s.el.length ? '<br>Uspon <b>+' + Math.round(s.up) + ' m</b> · Spust <b>−' + Math.round(s.dn) + ' m</b>' : '') +
+    '<br>Procjena hoda: ≈ <b>' + fmtT(h).slice(0, -3) + ' h</b></div>' +
+    '<div class="row"><button onclick="gReturnMenu=null;sheet();navFollow(curTrack)">▶ Prati stazu</button>' +
+    '<button class="gray" onclick="trkHideMap()">Sakrij s mape</button>' +
+    (t.id ? '<button class="red" onclick="trkDelAsk(\'' + t.id + '\')">Obriši stazu</button>' : '') + '</div>');
+}
+function trkHideMap() { trk.clearLayers(); curTrack = null; gSnapTrk = null; sheet(); info.innerHTML = ''; prof.style.display = 'none'; gUpdateCross(); gTickHud(); }
+function trkDelAsk(id) {
+  const t = trackCache[id] || curTrack; if (!t) return;
+  sheet('<b>Obrisati stazu?</b><div class="kv">Želite li trajno obrisati stazu <b>„' + esc(t.name) + '“</b>?</div>' +
+    '<div class="row"><button class="red" onclick="trkDelYes(\'' + id + '\')">Da, obriši</button><button class="gray" onclick="sheet()">Ne, odustani</button></div>');
+}
+async function trkDelYes(id) {
+  await dbDel('tracks', id); delete trackCache[id];
+  if (curTrack && curTrack.id === id) { trk.clearLayers(); curTrack = null; }
+  gSnapTrk = null; sheet(); info.innerHTML = ''; prof.style.display = 'none'; gUpdateCross(); gTickHud();
 }
 function gUpdateCross() {
   const cr = $('gCross'), menuOpen = $('gMenu').classList.contains('on'), shOpen = $('sheet').style.display === 'block';
   const show = !menuOpen && !shOpen && (!calOn || gObjPick) && (gAimActive() || !locLock);
   cr.classList.toggle('on', show);
   cr.classList.toggle('aim', gAimActive());
-  cr.classList.toggle('snap', !gAimActive() && !!gSnapMk);
+  cr.classList.toggle('snap', !gAimActive() && !!(gSnapMk || gSnapTrk));
 }
 function gSheetItems() {
   if ($('sb').classList.contains('g-open') || $('sb').style.display === 'flex' || $('sb').style.display === 'block') return gSrItems();
@@ -2509,7 +2602,8 @@ function gSubItems(id) {
     { t: 'Mjeri udaljenost', s: 'Krstić + OK', fn: () => { gMenuClose(); locLock = false; setMode('measure'); info.innerHTML = ''; prof.style.display = 'none'; gUpdateCross(); gTickHud(); } },
     { t: 'Azimut', s: 'Linija na mapi (krstić)', fn: () => { gMenuClose(); locLock = false; setMode('bearing'); info.innerHTML = ''; prof.style.display = 'none'; gUpdateCross(); gTickHud(); } },
     { t: 'Nadmorska visina', s: 'Krstić + OK', fn: () => { gMenuClose(); locLock = false; setMode('elev'); info.innerHTML = ''; prof.style.display = 'none'; gUpdateCross(); gTickHud(); } },
-    { t: 'Dionica A→B po stazi', s: 'Krstić A pa B + OK', fn: () => { gMenuClose(); locLock = false; setMode('route'); info.innerHTML = ''; prof.style.display = 'none'; gUpdateCross(); gTickHud(); } }
+    { t: 'Radius (krug)', s: 'Centar pa rub (krstić)', fn: () => { gMenuClose(); locLock = false; setMode('radius'); info.innerHTML = ''; prof.style.display = 'none'; gUpdateCross(); gTickHud(); } },
+    { t: 'Dionica A→B po stazi', s: 'Do 3 opcije rute + OK', fn: () => { gMenuClose(); locLock = false; setMode('route'); info.innerHTML = ''; prof.style.display = 'none'; gUpdateCross(); gTickHud(); } }
   ];
   if (id === 'cal') return [
     { t: 'Po smjeru' + (mapRot ? ' ✓' : ''), s: 'Rotira kartu', fn: () => { compassListen(); setMapRot(true); gMenuRender(); gTickHud(); } },
@@ -2608,7 +2702,7 @@ function gMenuActivate() {
 }
 function gPanDir(sx, sy, fast = false) {
   locLock = false;
-  if (gSnapMk) { gSnapMk = null; gSnapCool = Date.now() + 450; }
+  if (gSnapMk || gSnapTrk) { gSnapMk = null; gSnapTrk = null; gSnapCool = Date.now() + 450; }
   const z = map.getZoom();
   let step = gAimActive() ? (z >= 16 ? 14 : z >= 13 ? 22 : 32) : (z >= 16 ? 20 : z >= 13 ? 32 : 52);
   if (fast) step = Math.round(step * 2.6);
@@ -2633,6 +2727,7 @@ async function gPickCenter() {
   if (mode === 'measure') measureAdd(p);
   else if (mode === 'bearing') await bearingTo(p);
   else if (mode === 'elev') await elevAt(p);
+  else if (mode === 'radius') radiusClick(p);
   else if (mode === 'route') await routeAdd(p);
 }
 function gKey(k, fast = false) {
@@ -2770,10 +2865,10 @@ function gKey(k, fast = false) {
   else if (k === 'left') { gBeep(false); gPanDir(-1, 0, fast); }
   else if (k === 'right') { gBeep(false); gPanDir(1, 0, fast); }
   else if (k === 'ok') {
-    gBeep(true);
-    if (gAimActive()) gPickCenter();
-    else if (gSnapMk) { markInfo(gSnapMk.id); }
-    else { $('bLoc').click(); gUpdateCross(); gTickHud(); }
+    if (gAimActive()) { gBeep(true); gPickCenter(); }
+    else if (gSnapMk) { gBeep(true); markInfo(gSnapMk.id); }
+    else if (gSnapTrk) { gBeep(true); trkCard(gSnapTrk); }
+    else if (!oriOn && window.DeviceOrientationEvent && DeviceOrientationEvent.requestPermission) { gBeep(true); compassListen(); gTickHud(); }
   }
 }
 
@@ -2784,6 +2879,36 @@ function gKey(k, fast = false) {
   document.querySelectorAll('#gDeck [data-k]').forEach(btn => {
     const k = btn.dataset.k, canRep = btn.dataset.rep === '1';
     if (!canRep) {
+      if (k === 'ok') {
+        let okT = 0, okLong = false;
+        const clearOk = () => { clearTimeout(okT); okT = 0; };
+        const startOk = () => {
+          clearOk(); okLong = false;
+          okT = setTimeout(() => {
+            okLong = true; okT = 0;
+            gHaptic('ok'); calTick(true);
+            gMenuClose(); sheet(); closeSearch();
+            if (calOn) calToggle(false);
+            gObjPick = false; pickCb = null; mode = null;
+            Object.values(btns).forEach(b => b.classList.remove('active'));
+            info.innerHTML = ''; prof.style.display = 'none';
+            $('bLoc').click(); gUpdateCross(); gTickHud();
+          }, 580);
+        };
+        btn.addEventListener('touchstart', () => { lastTouch = Date.now(); startOk(); }, { passive: true });
+        btn.addEventListener('touchend', clearOk, { passive: true });
+        btn.addEventListener('touchcancel', clearOk, { passive: true });
+        btn.addEventListener('mousedown', () => { if (Date.now() - lastTouch >= 700) startOk(); });
+        btn.addEventListener('mouseup', clearOk);
+        btn.addEventListener('mouseleave', clearOk);
+        btn.addEventListener('click', e => {
+          e.stopPropagation();
+          if (okLong) { okLong = false; return; }
+          if (mapRot && !oriOn) compassListen();
+          gKey(k);
+        });
+        return;
+      }
       btn.addEventListener('click', e => {
         e.stopPropagation();
         if (mapRot && !oriOn) compassListen();
@@ -2832,17 +2957,20 @@ function gTickHud() {
     txt.textContent = 'Drži SOS 1 sekundu za aktivaciju';
   } else if (gAimActive()) {
     const c = gCrossLatLng();
-    const tName = gObjPick ? 'OBJEKAT' : pickCb ? 'TAČKA' : ({ measure: 'MJERI', bearing: 'AZIMUT', elev: 'VISINA', route: rPts.length ? 'RUTA → B' : 'RUTA → A' }[mode] || 'KRSTIĆ');
+    const tName = gObjPick ? 'OBJEKAT' : pickCb ? 'TAČKA' : ({ measure: 'MJERI', bearing: 'AZIMUT', elev: 'VISINA', radius: rCenter ? 'RADIUS → RUB' : 'RADIUS → CENTAR', route: rPts.length ? 'RUTA → B' : 'RUTA → A' }[mode] || 'KRSTIĆ');
     st.classList.remove('rec'); tag.textContent = tName;
     txt.textContent = (me ? fmtD(dist(me, c)) + ' · ' + brg(bearing(me, c)) : c.lat.toFixed(4) + ', ' + c.lng.toFixed(4)) + ' · OK / NAZAD';
   } else if (!locLock) {
     if (gSnapMk) {
       st.classList.remove('rec'); tag.textContent = 'MARKER';
       txt.textContent = gSnapMk.name + ' · OK otvori / obriši';
+    } else if (gSnapTrk) {
+      st.classList.remove('rec'); tag.textContent = 'STAZA';
+      txt.textContent = gSnapTrk.name + ' · OK prati / obriši';
     } else {
       const c = gCrossLatLng();
       st.classList.remove('rec'); tag.textContent = 'KRSTIĆ';
-      txt.textContent = (me ? fmtD(dist(me, c)) + ' · ' + brg(bearing(me, c)) : c.lat.toFixed(4) + ', ' + c.lng.toFixed(4)) + ' · OK lokacija';
+      txt.textContent = (me ? fmtD(dist(me, c)) + ' · ' + brg(bearing(me, c)) : c.lat.toFixed(4) + ', ' + c.lng.toFixed(4)) + ' · Drži OK lokacija';
     }
   } else if (rec) {
     st.classList.add('rec'); tag.textContent = rec.paused ? 'PAUZA' : 'SNIMA';
