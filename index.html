@@ -1429,7 +1429,8 @@ async function elevAt(p) { tools.clearLayers(); dot(p); info.innerHTML = '<b>' +
 let sr = [];
 function toggleSearch() { if ($('sb').style.display === 'block') closeSearch(); else { if (calOn) calToggle(false); sheet(); $('sb').style.display = 'block'; $('q').focus(); } }
 function closeSearch() { runId++; ctrls.forEach(c => c.abort()); clearTimeout(tPh); $('sb').style.display = 'none'; $('sb').classList.remove('g-open'); $('sr').innerHTML = ''; $('q').blur(); }
-function goTo(ll) { closeSearch(); locLock = false; gViewAtCross(ll, Math.max(map.getZoom(), 14));
+let gLastPlace = null;
+function goTo(ll, name) { closeSearch(); locLock = false; gSnapMk = null; gLastPlace = name ? { ll, name } : null; gViewAtCross(ll, Math.max(map.getZoom(), 14));
   const f = L.circleMarker(ll, { radius: 16, color: '#d9702a', weight: 3, fill: false }).addTo(map); setTimeout(() => map.removeLayer(f), 3000); }
 /* --- transliteracija, normalizacija, kategorije --- */
 const CYR = {}; 'АБВГДЂЕЖЗИЈКЛЉМНЊОПРСТЋУФХЦЧЏШ'.split('').forEach((c, i) => { const l = ['A','B','V','G','D','Đ','E','Ž','Z','I','J','K','L','Lj','M','N','Nj','O','P','R','S','T','Ć','U','F','H','C','Č','Dž','Š'][i]; CYR[c] = l; CYR[c.toLowerCase()] = l.toLowerCase(); });
@@ -1556,7 +1557,7 @@ function runSearch(q, enter) {
   const show = () => { if (id !== runId) return; const res = finalize(all, toks, ref); sr = res;
     if (!pend && enter && !nomDone && res.length < 3 && errs < total) { nomDone = true; run(cached('n|' + norm(q) + rk, () => nominatim(q, ref))); }
     out.innerHTML = (res.length ? '<small>Poredano po udaljenosti od ' + (ref === me ? 'tvoje lokacije' : 'centra mape') + '</small>' : pend ? '<small>⏳ tražim…</small>' : '') +
-      (res.length ? res.map((r, i) => '<div class="item" onclick="goTo(sr[' + i + '].ll)"><span><b>' + esc(r.name) + '</b><br><small>' + esc(r.sub) + '</small></span><span>' + fmtD(r.dist) + '</span></div>').join('')
+      (res.length ? res.map((r, i) => '<div class="item" onclick="goTo(sr[' + i + '].ll,sr[' + i + '].name)"><span><b>' + esc(r.name) + '</b><br><small>' + esc(r.sub) + '</small></span><span>' + fmtD(r.dist) + '</span></div>').join('')
         : pend ? '' : errs >= total ? 'Pretraga imena traži internet. Koordinate (lat,lng) rade i offline.' : 'Nema rezultata. Probaj samo ime ili samo vrstu (npr. „planinarski dom“).') + (pend && res.length ? '<small>⏳ još tražim dodatne rezultate…</small>' : ''); };
   const run = p => { pend++; total++; ok(p).then(r => { pend--; if (id !== runId) return; errs += r.err || 0; all = all.concat(r.v); show(); }); };
   run(cached('p|' + norm(q) + rk, () => photon(q, ref))); if (toks.length > 1) toks.forEach(t => run(cached('p|' + t + rk, () => photon(t, ref))));
@@ -2086,7 +2087,7 @@ function drawMarks() { mkLayer.clearLayers(); const perm = map.getZoom() >= 13;
     mk.bindTooltip('<span class="cr">' + esc(m.name) + '</span>', { permanent: perm, direction: 'top', className: 'lbl', offset: [0, -16] }); mk.on('click', () => markInfo(m.id)); }); }
 map.on('zoomend', drawMarks);
 function markHere() { dr(false); const p = me || map.getCenter(); markForm({ lat: p.lat, lng: p.lng, alt: me ? meAlt : null }); }
-function markPick() { dr(false); sheet(); info.textContent = 'Dodirni mjesto na mapi za marker.'; pickCb = p => markForm({ lat: p.lat, lng: p.lng }); }
+function markPick() { dr(false); sheet(); mode = null; gObjPick = false; gSnapMk = null; info.innerHTML = ''; prof.style.display = 'none'; pickCb = p => { const nm = gLastPlace && dist(p, gLastPlace.ll) < 250 ? gLastPlace.name : ''; markForm({ lat: p.lat, lng: p.lng, name: nm }); }; }
 function markForm(d) { mkDraft = d; gMkKbdOn = false; gMkKr = 0; gMkKc = 0;
   sheet('<b>' + (d.id ? 'Uredi marker' : 'Novi marker') + '</b><div class="kv"><small>' + fmtLL(d) + (d.alt != null ? ' · ' + Math.round(d.alt) + ' m' : '') + '</small></div>' +
     '<div class="row"><input id="mkN" readonly inputmode="none" placeholder="Naziv (prazno = ime simbola)" value="' + esc(d.name || '') + '" style="flex:1;min-width:0;font:700 12.5px ui-monospace,Menlo,monospace"></div>' +
@@ -2097,7 +2098,7 @@ function markForm(d) { mkDraft = d; gMkKbdOn = false; gMkKr = 0; gMkKc = 0;
     '<div style="font:500 10px ui-monospace,Menlo,monospace;color:#87918b;margin-top:4px">◄► Simbol · ▲▼ Dugme · OK Potvrdi</div>'); }
 const mkPick = k => { $('mkC').value = k; document.querySelectorAll('.icb').forEach(b => b.classList.toggle('sel', b.dataset.k === k)); };
 async function markSave() { const d = mkDraft, c = $('mkC').value, m = { id: d.id || 'mk' + Date.now(), name: $('mkN').value.trim() || catOf(c).n, cat: c, note: $('mkT').value.trim(), lat: d.lat, lng: d.lng, alt: d.alt != null ? d.alt : null, t: d.t || Date.now() };
-  const i = MK.findIndex(x => x.id === m.id); if (i >= 0) MK[i] = m; else MK.push(m); await saveMarks(); drawMarks(); sheet(); info.innerHTML = '✓ Marker „' + esc(m.name) + '“ spremljen.';
+  const i = MK.findIndex(x => x.id === m.id); if (i >= 0) MK[i] = m; else MK.push(m); drawMarks(); sheet(); gUpdateCross(); gTickHud(); info.innerHTML = '✓ Marker „' + esc(m.name) + '“ spremljen.'; saveMarks();
   if (m.alt == null) safeElev([m]).then(el => { if (el) { m.alt = Math.round(el[0]); saveMarks(); } }); }
 function markInfo(id) { const m = MK.find(x => x.id === id); if (!m) return; const r = me || map.getCenter();
   info.innerHTML = '<b class="big">' + mkIc(m.cat) + esc(m.name) + '</b><br>' + catOf(m.cat).n + (m.alt != null ? ' · ' + Math.round(m.alt) + ' m' : '') + '<br>' + fmtLL(m) + (m.note ? '<br>' + esc(m.note) : '') +
@@ -2533,8 +2534,14 @@ function gSubItems(id) {
     { t: 'Vrati me do…', s: 'Navigacija', fn: () => { gMenuClose(true); navOpen(); } }
   ];
   if (id === 'marks') return [
-    { t: 'Označi ovdje', s: 'Trenutna pozicija', fn: () => { gMenuClose(true); markHere(); } },
-    { t: 'Marker na mapi (krstić)', s: 'Nanišani + OK', fn: () => { gMenuClose(); locLock = false; markPick(); info.innerHTML = ''; prof.style.display = 'none'; gUpdateCross(); gTickHud(); } },
+    { t: !locLock ? 'Označi pod krstićem' : 'Označi moju lokaciju', s: !locLock ? (gLastPlace && dist(gCrossLatLng(), gLastPlace.ll) < 250 ? gLastPlace.name : 'Tačka u centru') : 'Trenutna GPS pozicija', fn: () => {
+        gMenuClose(true);
+        if (!locLock) {
+          const p = gCrossLatLng(), nm = gLastPlace && dist(p, gLastPlace.ll) < 250 ? gLastPlace.name : '';
+          markForm({ lat: p.lat, lng: p.lng, name: nm });
+        } else { markHere(); }
+      } },
+    { t: 'Marker na mapi (krstić)', s: 'Pomjeri krstić + OK', fn: () => { gMenuClose(); locLock = false; markPick(); gUpdateCross(); gTickHud(); } },
     { t: 'Lista markera', s: MK.length + ' spremljenih', fn: () => { gMenuClose(true); markList(); } }
   ];
   if (id === 'tools') return [
