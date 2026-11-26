@@ -2541,7 +2541,14 @@ function gSubItems(id) {
           markForm({ lat: p.lat, lng: p.lng, name: nm });
         } else { markHere(); }
       } },
-    { t: 'Marker na mapi (krstić)', s: 'Pomjeri krstić + OK', fn: () => { gMenuClose(); locLock = false; markPick(); gUpdateCross(); gTickHud(); } },
+    { t: 'Marker na mapi (krstić)', s: 'Pomjeri krstić + OK', fn: () => {
+        const p = gCrossLatLng();
+        if (!locLock && gLastPlace && dist(p, gLastPlace.ll) < 300) {
+          gMenuClose(true); markForm({ lat: p.lat, lng: p.lng, name: gLastPlace.name });
+        } else {
+          gMenuClose(); locLock = false; markPick(); gUpdateCross(); gTickHud();
+        }
+      } },
     { t: 'Lista markera', s: MK.length + ' spremljenih', fn: () => { gMenuClose(true); markList(); } }
   ];
   if (id === 'tools') return [
@@ -2819,7 +2826,7 @@ function gTickHud() {
   const bars = me ? (meAcc <= 8 ? 4 : meAcc <= 18 ? 3 : meAcc <= 40 ? 2 : 1) : 0;
   $('gSig').querySelectorAll('i').forEach((el, i) => el.classList.toggle('on', i < bars));
   $('gGpsTxt').textContent = me ? 'GPS ±' + Math.round(meAcc) + 'm' : 'GPS —';
-  const st = $('gStatus'), tag = $('gStatTag'), txt = $('gStatTxt');
+  const st = $('gStatus'), tag = $('gStatTag'), txt = $('gStatTxt'); st.style.display = 'flex';
   if (Date.now() < gSosHintUntil) {
     st.classList.add('rec'); tag.textContent = 'SOS ZAŠTITA';
     txt.textContent = 'Drži SOS 1 sekundu za aktivaciju';
@@ -2846,9 +2853,11 @@ function gTickHud() {
   } else if (navT) {
     st.classList.remove('rec'); tag.textContent = navT.rt ? 'RUTA' : 'MARKER';
     txt.textContent = ($('navD').textContent || '—') + ' · ' + (navT.name || 'Cilj') + ' · 2×NAZAD izlaz';
+  } else if (!oriOn && window.DeviceOrientationEvent && DeviceOrientationEvent.requestPermission) {
+    st.style.display = 'flex'; st.classList.remove('rec'); tag.textContent = 'KOMPAS';
+    txt.textContent = 'Pritisni OK za uključivanje kompasa';
   } else {
-    st.classList.remove('rec'); tag.textContent = mapRot ? 'SMJER GORE' : 'SJEVER GORE';
-    txt.textContent = (!oriOn && window.DeviceOrientationEvent && DeviceOrientationEvent.requestPermission) ? 'Pritisni OK za kompas' : (me ? 'GPS ±' + Math.round(meAcc) + ' m · MENU alati' : 'Tražim GPS · MENU alati');
+    st.style.display = 'none';
   }
   gUpdateCross();
 }
