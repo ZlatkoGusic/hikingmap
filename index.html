@@ -1090,7 +1090,14 @@ svg.leaflet-image-layer.leaflet-interactive path {
   #gScreen #sheet .icg::-webkit-scrollbar { display: none; }
   #gScreen #sheet .icb { flex: 0 0 64px; border-radius: 0 !important; background: #222628 !important; color: #c8d0cb !important; border: 1px solid #353b3e !important; padding: 7px 3px !important; }
   #gScreen #sheet .icb.sel { outline: 2px solid #e8ece9 !important; background: #343b3e !important; color: #fff !important; border-color: #e8ece9 !important; }
+
+  /* Mobile touch & viewport hardening */
+  body { height: 100vh; height: 100dvh; }
+  #gDeck { z-index: 2000 !important; touch-action: manipulation; }
+  #gDeck button { -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
+  #gDeck svg { pointer-events: none; }
 </style>
+
 
 
 </head>
@@ -1198,6 +1205,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
   </div>
 </div>
 <input type="file" id="gpxIn" accept=".gpx,.xml,application/gpx+xml,text/xml" multiple hidden>
+<input type="checkbox" id="gHap" switch style="position:fixed;left:-9999px;opacity:0;pointer-events:none"><label for="gHap" id="gHapL" style="position:fixed;left:-9999px;opacity:0;pointer-events:none"></label>
 
 <script>/* @preserve
  * Leaflet 1.9.4, a JS library for interactive maps. https://leafletjs.com
@@ -2318,7 +2326,16 @@ const gLayers = [
   { name: 'Street', layer: street },
   { name: 'Satelit', layer: sat }
 ];
-function gBeep(strong = false) { calTick(strong); }
+function gHaptic(mode = 'tap') {
+  try {
+    if (navigator.vibrate) {
+      navigator.vibrate(mode === 'sos' ? [30, 35, 30] : mode === 'ok' ? 18 : 12);
+    } else if ($('gHapL')) {
+      $('gHapL').click();
+    }
+  } catch (e) {}
+}
+function gBeep(strong = false) { gHaptic(strong ? 'ok' : 'tap'); calTick(strong); }
 function gAimActive() { return !!(pickCb || mode || gObjPick); }
 function gUpdateCross() {
   const cr = $('gCross'), menuOpen = $('gMenu').classList.contains('on'), shOpen = $('sheet').style.display === 'block';
@@ -2472,7 +2489,7 @@ function gKey(k) {
   const shItems = gSheetItems();
   const sbOpen = $('sb').classList.contains('g-open') || $('sb').style.display === 'flex' || $('sb').style.display === 'block';
   const shOpen = $('sheet').style.display === 'block' || (!sbOpen && shItems.length > 0);
-  if (k === 'sos') { gBeep(true); gMenuClose(); gObjPick = false; if (calOn) calToggle(false); sosOpen(); return; }
+  if (k === 'sos') { gHaptic('sos'); calTick(true); gMenuClose(); gObjPick = false; if (calOn) calToggle(false); sosOpen(); return; }
   if (k === 'menu') { gBeep(true); gMenuToggle(); return; }
   if (k === 'zin') { gBeep(false); map.zoomIn(1); return; }
   if (k === 'zout') { gBeep(false); map.zoomOut(1); return; }
@@ -2569,18 +2586,38 @@ function gKey(k) {
   }
 }
 
-/* Hold-to-repeat on D-pad/Zoom + 1s long-press safety on SOS */
+/* Bulletproof Mobile (iOS/Android) + PC Deck Controls */
 (() => {
-  let repT = 0, repI = 0, sosT = 0, sosFired = false;
+  let repT = 0, repI = 0, lastTouch = 0;
   const stopRep = () => { clearTimeout(repT); clearInterval(repI); repT = 0; repI = 0; };
   document.querySelectorAll('#gDeck [data-k]').forEach(btn => {
     const k = btn.dataset.k, canRep = btn.dataset.rep === '1';
-
-    btn.addEventListener('pointerdown', e => {
-      e.preventDefault(); stopRep(); gKey(k);
-      if (canRep) repT = setTimeout(() => { repI = setInterval(() => gKey(k), 120); }, 300);
+    if (!canRep) {
+      btn.addEventListener('click', e => {
+        e.stopPropagation();
+        if (mapRot && !oriOn) compassListen();
+        gKey(k);
+      });
+      return;
+    }
+    const startHold = () => {
+      stopRep(); gKey(k);
+      repT = setTimeout(() => { repI = setInterval(() => gKey(k), 130); }, 320);
+    };
+    btn.addEventListener('touchstart', e => {
+      lastTouch = Date.now();
+      e.preventDefault();
+      startHold();
+    }, { passive: false });
+    btn.addEventListener('touchend', stopRep, { passive: true });
+    btn.addEventListener('touchcancel', stopRep, { passive: true });
+    btn.addEventListener('mousedown', e => {
+      if (Date.now() - lastTouch < 700) return;
+      e.preventDefault();
+      startHold();
     });
-    ['pointerup', 'pointerleave', 'pointercancel'].forEach(ev => btn.addEventListener(ev, stopRep));
+    btn.addEventListener('mouseup', stopRep);
+    btn.addEventListener('mouseleave', stopRep);
   });
 })();
 
@@ -2644,9 +2681,9 @@ function gToggleFs(forceOn) {
 }
 document.addEventListener('fullscreenchange', () => setTimeout(() => map.invalidateSize(), 120));
 document.addEventListener('webkitfullscreenchange', () => setTimeout(() => map.invalidateSize(), 120));
-$('gDeck').addEventListener('pointerdown', () => {
+$('gDeck').addEventListener('click', () => {
   if (!gFsTried && !gIsFs() && gCanFs()) { gFsTried = true; gToggleFs(true); }
-}, { passive: true });
+});
 setMapRot(true); setTimeout(() => map.invalidateSize(), 150);
 </script>
 
