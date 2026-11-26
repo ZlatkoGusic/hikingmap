@@ -2293,6 +2293,7 @@ const gKbdRows = [
 function gSrItems() { return [...$('sr').querySelectorAll('.item')].filter(el => el.offsetParent !== null); }
 function gEnterSr() {
   const res = gSrItems(); if (!res.length) return false;
+  $('sr').scrollTop = 0;
   gKbdOn = false; gSheetIdx = 0; gKbdRender(); gSheetHighlight(0); return true;
 }
 function gKbdRender() {
@@ -2377,9 +2378,9 @@ function gSheetHighlight(delta = 0) {
   el.classList.add('gFocus');
   const box = el.closest('#sheet, #sr');
   if (box) {
-    const t = el.offsetTop, b = t + el.offsetHeight;
-    if (t < box.scrollTop) box.scrollTop = t - 6;
-    else if (b > box.scrollTop + box.clientHeight) box.scrollTop = b - box.clientHeight + 6;
+    const br = box.getBoundingClientRect(), er = el.getBoundingClientRect();
+    if (er.top < br.top) box.scrollTop -= (br.top - er.top) + 6;
+    else if (er.bottom > br.bottom) box.scrollTop += (er.bottom - br.bottom) + 6;
   }
 }
 new MutationObserver(() => {
@@ -2481,9 +2482,9 @@ function gMenuRender() {
   ).join('');
   const sel = list.querySelector('.gItem.sel');
   if (sel) {
-    const t = sel.offsetTop, b = t + sel.offsetHeight;
-    if (t < list.scrollTop) list.scrollTop = t - 4;
-    else if (b > list.scrollTop + list.clientHeight) list.scrollTop = b - list.clientHeight + 4;
+    const br = list.getBoundingClientRect(), er = sel.getBoundingClientRect();
+    if (er.top < br.top) list.scrollTop -= (br.top - er.top) + 4;
+    else if (er.bottom > br.bottom) list.scrollTop += (er.bottom - br.bottom) + 4;
   }
 }
 function gMenuToggle(force) {
@@ -2550,7 +2551,11 @@ function gKey(k) {
     if (info.textContent.trim()) { info.innerHTML = ''; prof.style.display = 'none'; gSheetHighlight(0); gTickHud(); return; }
     if (pickCb) { pickCb = null; gUpdateCross(); gTickHud(); return; }
     if (mode) { mode = null; Object.values(btns).forEach(b => b.classList.remove('active')); $('radRow').style.display = 'none'; gUpdateCross(); gTickHud(); return; }
-    if (!locLock && me) { $('bLoc').click(); gUpdateCross(); gTickHud(); return; }
+    if (!locLock || (!navT && tools.getLayers().length)) {
+      if (!navT && tools.getLayers().length) resetTools();
+      if (me) $('bLoc').click();
+      gUpdateCross(); gTickHud(); return;
+    }
     return;
   }
   if (menuOpen) {
