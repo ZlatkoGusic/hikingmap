@@ -969,7 +969,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
   body.g-night #map { filter: invert(1) hue-rotate(180deg) brightness(.72) contrast(1.15); }
 
   /* === AVIONICS COCKPIT SIDE-WINDOWS (SHARP EDGES, NO BLUE) === */
-  @keyframes gSlideIn { from { opacity: 0; transform: translateX(18px); } to { opacity: 1; transform: translateX(0); } }
+  @keyframes gSlideIn { from { opacity: 0; } to { opacity: 1; } }
 
   #gMenu {
     left: auto !important; right: 0 !important; top: 8px !important; bottom: 44px !important;
@@ -2356,7 +2356,12 @@ function gSheetHighlight(delta = 0) {
   gSheetIdx = (gSheetIdx + delta + items.length) % items.length;
   const el = items[gSheetIdx];
   el.classList.add('gFocus');
-  el.scrollIntoView({ block: 'nearest' });
+  const box = el.closest('#sheet, #sr');
+  if (box) {
+    const t = el.offsetTop, b = t + el.offsetHeight;
+    if (t < box.scrollTop) box.scrollTop = t - 6;
+    else if (b > box.scrollTop + box.clientHeight) box.scrollTop = b - box.clientHeight + 6;
+  }
 }
 new MutationObserver(() => {
   gSheetIdx = 0; setTimeout(() => { gSheetHighlight(0); gUpdateCross(); }, 25);
@@ -2374,18 +2379,18 @@ function gMainItems() {
   list.push(
     { t: 'Moja lokacija', s: me ? fmtLL(me) : 'Traži GPS', fn: () => { gMenuClose(); $('bLoc').click(); gUpdateCross(); gTickHud(); } },
     { t: 'Traži mjesto', s: 'Tastatura / koordinate', fn: () => { gMenuClose(); gOpenSearch(); } },
-    { t: 'Kompas: po smjeru' + (mapRot ? ' ✓' : ''), s: 'Prati trenutni smjer', fn: () => { setMapRot(true); gMenuRender(); gTickHud(); } },
-    { t: 'Kompas: po sjeveru' + (!mapRot ? ' ✓' : ''), s: 'Sjever fiksno gore', fn: () => { setMapRot(false); gMenuRender(); gTickHud(); } },
-    { t: 'Poravnaj kompas', s: hdgOff ? fmtSign(hdgOff) : 'Sjene / Sunce / 1°', sub: 'cal' },
-    { t: 'Rute i GPX', s: rec ? 'Snimanje aktivno' : 'Snimi / Uvezi', sub: 'routes' },
+    { t: 'Mjeri udaljenost', s: 'Krstić + OK', fn: () => { gMenuClose(); locLock = false; setMode('measure'); info.textContent = 'Pomjeri krstić na tačke i pritiskaj OK.'; gUpdateCross(); gTickHud(); } },
     { t: 'Markeri', s: MK.length + ' tačaka', sub: 'marks' },
-    { t: 'Alati i ekran', s: gLayers[gLayIdx].name, sub: 'tools' },
-    { t: 'Hitno: SOS', s: 'Koordinate i poruka', fn: () => { gMenuClose(); sosOpen(); } }
+    { t: 'Rute i GPX', s: rec ? 'Snimanje aktivno' : 'Snimi / Uvezi', sub: 'routes' },
+    { t: 'Kompas', s: (mapRot ? 'Po smjeru' : 'Po sjeveru') + (hdgOff ? ' · ' + fmtSign(hdgOff) : ''), sub: 'cal' },
+    { t: 'Alati i ekran', s: gLayers[gLayIdx].name, sub: 'tools' }
   );
   return list;
 }
 function gSubItems(id) {
   if (id === 'cal') return [
+    { t: 'Po smjeru' + (mapRot ? ' ✓' : ''), s: 'Rotira kartu', fn: () => { compassListen(); setMapRot(true); gMenuRender(); gTickHud(); } },
+    { t: 'Po sjeveru' + (!mapRot ? ' ✓' : ''), s: 'Sjever fiksno gore', fn: () => { setMapRot(false); gMenuRender(); gTickHud(); } },
     { t: 'Ručno poravnanje (◄► 1°)', s: 'Strelice po 1°', fn: () => { gMenuClose(); gObjPick = false; calToggle(true); gUpdateCross(); } },
     { t: 'Poravnaj po sjeni', s: 'Leđa Suncu', fn: () => { gMenuClose(); gObjPick = false; calToggle(true); setTimeout(() => calSun(true), 80); } },
     { t: 'Poravnaj prema Suncu', s: 'Vrh ka Suncu', fn: () => { gMenuClose(); gObjPick = false; calToggle(true); setTimeout(() => calSun(false), 80); } },
@@ -2424,8 +2429,6 @@ function gSubItems(id) {
         gMenuRender();
       } },
     { t: gIsFs() ? 'Izađi iz punog ekrana' : 'Puni ekran', s: gCanFs() ? 'Sakrij traku browsera' : 'iOS: Dodaj na početni', fn: () => { gToggleFs(); gMenuRender(); } },
-    { t: 'Traži mjesto', s: 'Tastatura', fn: () => { gMenuClose(); gOpenSearch(); } },
-    { t: 'Mjeri udaljenost (krstić)', s: 'Nanišani + OK', fn: () => { gMenuClose(); locLock = false; setMode('measure'); info.textContent = 'Pomjeri krstić na tačke i pritiskaj OK.'; gUpdateCross(); gTickHud(); } },
     { t: 'Bearing (krstić)', s: 'Nanišani + OK', fn: () => { gMenuClose(); locLock = false; setMode('bearing'); info.textContent = 'Pomjeri krstić na cilj i pritisni OK.'; gUpdateCross(); gTickHud(); } },
     { t: 'Nadmorska visina (krstić)', s: 'Nanišani + OK', fn: () => { gMenuClose(); locLock = false; setMode('elev'); info.textContent = 'Pomjeri krstić na tačku i pritisni OK.'; gUpdateCross(); gTickHud(); } },
     { t: 'Zalazak sunca', s: 'Mrak / sumrak', fn: () => { gMenuClose(); sunOpen(0); } },
@@ -2448,7 +2451,11 @@ function gMenuRender() {
     '<div class="gItem' + (i === gIdx ? ' sel' : '') + '"><span>' + it.t + '</span><small>' + (it.s || '') + '</small></div>'
   ).join('');
   const sel = list.querySelector('.gItem.sel');
-  if (sel) sel.scrollIntoView({ block: 'nearest' });
+  if (sel) {
+    const t = sel.offsetTop, b = t + sel.offsetHeight;
+    if (t < list.scrollTop) list.scrollTop = t - 4;
+    else if (b > list.scrollTop + list.clientHeight) list.scrollTop = b - list.clientHeight + 4;
+  }
 }
 function gMenuToggle(force) {
   const el = $('gMenu'), open = force == null ? !el.classList.contains('on') : !!force;
@@ -2654,7 +2661,7 @@ function gTickHud() {
     txt.textContent = ($('navD').textContent || '—') + ' · ' + (navT.name || 'Cilj');
   } else {
     st.classList.remove('rec'); tag.textContent = mapRot ? 'SMJER GORE' : 'SJEVER GORE';
-    txt.textContent = me ? 'GPS ±' + Math.round(meAcc) + ' m · MENU alati' : 'Tražim GPS · MENU alati';
+    txt.textContent = (!oriOn && window.DeviceOrientationEvent && DeviceOrientationEvent.requestPermission) ? 'Pritisni OK za kompas' : (me ? 'GPS ±' + Math.round(meAcc) + ' m · MENU alati' : 'Tražim GPS · MENU alati');
   }
   gUpdateCross();
 }
@@ -2682,8 +2689,12 @@ function gToggleFs(forceOn) {
 document.addEventListener('fullscreenchange', () => setTimeout(() => map.invalidateSize(), 120));
 document.addEventListener('webkitfullscreenchange', () => setTimeout(() => map.invalidateSize(), 120));
 $('gDeck').addEventListener('click', () => {
+  if (mapRot && !oriOn) compassListen();
   if (!gFsTried && !gIsFs() && gCanFs()) { gFsTried = true; gToggleFs(true); }
 });
+$('gDeck').addEventListener('touchend', () => {
+  if (mapRot && !oriOn) compassListen();
+}, { passive: true });
 try { setMapRot(true); } catch (e) {} setTimeout(() => map.invalidateSize(), 150);
 </script>
 
