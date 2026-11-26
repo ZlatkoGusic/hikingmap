@@ -1996,7 +1996,7 @@ function routeDraw() { tools.clearLayers();
   rSegs.forEach(s => { L.polyline(s.pts.map(p => [p.lat, p.lng]), { color: '#f0622b', weight: 5, opacity: .92 }).addTo(tools); const m = s.pts[s.pts.length >> 1]; label([m.lat, m.lng], fmtD(s.d)); });
   rPts.forEach((p, i) => { dot(p, i === 0 ? '#2e7d32' : '#d93025'); label(p, String.fromCharCode(65 + (i % 26))); }); }
 async function routeAdd(p) {
-  if (busy) return; rPts.push(p); routeDraw(); if (rPts.length < 2) { info.textContent = 'Početak (A) postavljen. Dodirni odredište (B).'; return; }
+  if (busy) return; rPts.push(p); routeDraw(); if (rPts.length < 2) { info.innerHTML = ''; gTickHud(); return; }
   busy = true; info.innerHTML = '<i>Tražim stazu…</i>'; const seg = await routeSeg(rPts[rPts.length - 2], p, $('rtProf').value); busy = false;
   if (!seg) { rPts.pop(); routeDraw(); info.textContent = 'Staza nije nađena (treba internet ili nema puta). Probaj drugi profil.'; return; }
   rSegs.push(seg); routeDraw(); routeInfo(); }
@@ -2096,7 +2096,7 @@ function navOpen() { dr(false); const r = refPt(), a = MK.map(m => ({ m, d: dist
     a.map(({ m, d }) => '<div class="item"><span><b>' + mkIc(m.cat) + esc(m.name) + '</b><br><small>' + catOf(m.cat).n + ' · ' + fmtD(d) + '</small></span><button onclick="navMark(\'' + m.id + '\')">Idi</button></div>').join('') +
     (a.length ? '' : '<p><small>Tip: označi parking ili početak ture markerom, pa ga ovdje izaberi za povratak.</small></p>')); }
 const navMark = id => { const m = MK.find(x => x.id === id); if (m) navTo(L.latLng(m.lat, m.lng), m.name); };
-function navPick() { sheet(); info.textContent = 'Dodirni cilj na mapi.'; pickCb = p => navTo(p, 'Tačka na mapi'); }
+function navPick() { sheet(); locLock = false; info.innerHTML = ''; prof.style.display = 'none'; pickCb = p => navTo(p, 'Tačka na mapi'); gUpdateCross(); gTickHud(); }
 let navTrk = null;
 function prepRouteNav(t) {
   const pts = t.pts.map(p => ({ lat: p.lat, lng: p.lng, alt: p.alt != null ? +p.alt : null }));
@@ -2414,10 +2414,10 @@ function gMainItems() {
 }
 function gSubItems(id) {
   if (id === 'measure') return [
-    { t: 'Mjeri udaljenost', s: 'Krstić + OK', fn: () => { gMenuClose(); locLock = false; setMode('measure'); info.textContent = 'Pomjeri krstić na tačke i pritiskaj OK.'; gUpdateCross(); gTickHud(); } },
+    { t: 'Mjeri udaljenost', s: 'Krstić + OK', fn: () => { gMenuClose(); locLock = false; setMode('measure'); info.innerHTML = ''; prof.style.display = 'none'; gUpdateCross(); gTickHud(); } },
     { t: 'Azimut', s: 'Linija na mapi (krstić)', fn: () => { gMenuClose(); locLock = false; setMode('bearing'); info.innerHTML = ''; prof.style.display = 'none'; gUpdateCross(); gTickHud(); } },
-    { t: 'Nadmorska visina', s: 'Krstić + OK', fn: () => { gMenuClose(); locLock = false; setMode('elev'); info.textContent = 'Pomjeri krstić na tačku i pritisni OK.'; gUpdateCross(); gTickHud(); } },
-    { t: 'Dionica A→B po stazi', s: 'Krstić A pa B + OK', fn: () => { gMenuClose(); locLock = false; setMode('route'); info.textContent = 'Pomjeri krstić na A pa OK, zatim B pa OK.'; gUpdateCross(); gTickHud(); } }
+    { t: 'Nadmorska visina', s: 'Krstić + OK', fn: () => { gMenuClose(); locLock = false; setMode('elev'); info.innerHTML = ''; prof.style.display = 'none'; gUpdateCross(); gTickHud(); } },
+    { t: 'Dionica A→B po stazi', s: 'Krstić A pa B + OK', fn: () => { gMenuClose(); locLock = false; setMode('route'); info.innerHTML = ''; prof.style.display = 'none'; gUpdateCross(); gTickHud(); } }
   ];
   if (id === 'cal') return [
     { t: 'Po smjeru' + (mapRot ? ' ✓' : ''), s: 'Rotira kartu', fn: () => { compassListen(); setMapRot(true); gMenuRender(); gTickHud(); } },
@@ -2438,12 +2438,12 @@ function gSubItems(id) {
     { t: rec ? 'Zaustavi snimanje' : 'Snimaj rutu', s: rec ? fmtD(stats(rec.pts).d) : 'Nova ruta', fn: () => { gMenuClose(); $('bRec').click(); } },
     { t: 'Spremljene rute', s: 'Prati / GPX', fn: () => { gMenuClose(); tracksOpen(); } },
     { t: 'Uvezi GPX fajl', s: 'Iz memorije', fn: () => { gMenuClose(); $('gpxIn').click(); } },
-    { t: 'Dionica A→B po stazi', s: 'Krstić + OK', fn: () => { gMenuClose(); locLock = false; setMode('route'); info.textContent = 'Pomjeri krstić na A pa OK, zatim B pa OK.'; gUpdateCross(); gTickHud(); } },
+    { t: 'Dionica A→B po stazi', s: 'Krstić + OK', fn: () => { gMenuClose(); locLock = false; setMode('route'); info.innerHTML = ''; prof.style.display = 'none'; gUpdateCross(); gTickHud(); } },
     { t: 'Vrati me do…', s: 'Navigacija', fn: () => { gMenuClose(); navOpen(); } }
   ];
   if (id === 'marks') return [
     { t: 'Označi ovdje', s: 'Trenutna pozicija', fn: () => { gMenuClose(); markHere(); } },
-    { t: 'Marker na mapi (krstić)', s: 'Nanišani + OK', fn: () => { gMenuClose(); locLock = false; markPick(); info.textContent = 'Pomjeri krstić (▲▼◄►) na tačku i pritisni OK.'; gUpdateCross(); gTickHud(); } },
+    { t: 'Marker na mapi (krstić)', s: 'Nanišani + OK', fn: () => { gMenuClose(); locLock = false; markPick(); info.innerHTML = ''; prof.style.display = 'none'; gUpdateCross(); gTickHud(); } },
     { t: 'Lista markera', s: MK.length + ' spremljenih', fn: () => { gMenuClose(); markList(); } }
   ];
   if (id === 'tools') return [
@@ -2505,8 +2505,12 @@ function gPanDir(sx, sy) {
   map.panBy([sx * step * ca - sy * step * sa, sx * step * sa + sy * step * ca], { animate: true, duration: 0.15 });
   gUpdateCross(); gTickHud();
 }
+function gCrossLatLng() {
+  const sz = map.getSize(), px = sz.x / 2, py = sz.y * rotOrigY, dys = (0.5 - rotOrigY) * sz.y;
+  return map.containerPointToLatLng(L.point(px + dys * Math.sin(mapAng), py + dys * Math.cos(mapAng)));
+}
 async function gPickCenter() {
-  const p = map.getCenter();
+  const p = gCrossLatLng();
   if (gObjPick) {
     gObjPick = false;
     calAlignTo(p);
@@ -2680,11 +2684,12 @@ function gTickHud() {
     st.classList.add('rec'); tag.textContent = 'SOS ZAŠTITA';
     txt.textContent = 'Drži SOS 1 sekundu za aktivaciju';
   } else if (gAimActive()) {
-    const c = map.getCenter();
-    st.classList.remove('rec'); tag.textContent = gObjPick ? 'NIŠAN OBJEKTA' : 'KRSTIĆ';
-    txt.textContent = (me ? fmtD(dist(me, c)) + ' · ' + brg(bearing(me, c)) : c.lat.toFixed(4) + ', ' + c.lng.toFixed(4)) + ' · OK';
+    const c = gCrossLatLng();
+    const tName = gObjPick ? 'OBJEKAT' : pickCb ? 'TAČKA' : ({ measure: 'MJERI', bearing: 'AZIMUT', elev: 'VISINA', route: rPts.length ? 'RUTA → B' : 'RUTA → A' }[mode] || 'KRSTIĆ');
+    st.classList.remove('rec'); tag.textContent = tName;
+    txt.textContent = (me ? fmtD(dist(me, c)) + ' · ' + brg(bearing(me, c)) : c.lat.toFixed(4) + ', ' + c.lng.toFixed(4)) + ' · OK / NAZAD';
   } else if (!locLock) {
-    const c = map.getCenter();
+    const c = gCrossLatLng();
     st.classList.remove('rec'); tag.textContent = 'KRSTIĆ';
     txt.textContent = (me ? fmtD(dist(me, c)) + ' · ' + brg(bearing(me, c)) : c.lat.toFixed(4) + ', ' + c.lng.toFixed(4)) + ' · OK lokacija';
   } else if (rec) {
