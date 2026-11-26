@@ -1615,6 +1615,7 @@ async function offGo() {
 async function offClear() { if (!confirm('Obrisati sve offline mape?')) return; await idb('tiles', 'readwrite', o => o.clear()); $('oP').textContent = 'Obrisano.'; }
 
 /* ---------- Kompas, strelica, ladica ---------- */
+let pickCb = null, routeEstMs = 0, MK = [], mkDraft = null, navT = null, navLine = null, navDot = null, navRot = 0, sunOff = 0, sosOn = false, lastFix = null, lastSave = 0;
 let hdg = 0, hdgAt = 0, lastOri = 0, meAlt = null, meAcc = null, rPts = [], rSegs = [], busy = false;
 const ARROW = L.divIcon({ className: '', iconSize: [36, 36], iconAnchor: [18, 18],
   html: '<svg class="arrow" viewBox="0 0 36 36" width="36" height="36"><path d="M18 3 L29 31 L18 24 L7 31 Z" fill="#d93025" stroke="#fff" stroke-width="2.5" stroke-linejoin="round"/></svg>' });
@@ -2015,7 +2016,6 @@ map.on('zoom move', updScale); updScale();
 document.addEventListener('gesturestart', e => e.preventDefault());
 
 /* ---------- Teren: markeri, vrati me do, zalazak sunca, hitna pozicija ---------- */
-let pickCb = null, routeEstMs = 0, MK = [], mkDraft = null, navT = null, navLine = null, navDot = null, navRot = 0, sunOff = 0, sosOn = false, lastFix = null, lastSave = 0;
 const mkLayer = L.layerGroup().addTo(map), nfd = (x, n) => x.toFixed(n).replace('.', ',');
 const MI = {
   parking: '<rect x="4" y="4" width="16" height="16" rx="3"/><path d="M10 16V8h3a2.5 2.5 0 0 1 0 5h-3"/>',
@@ -2266,7 +2266,7 @@ if ('serviceWorker' in navigator && location.protocol.startsWith('http')) naviga
 startWatch();
 
 /* === PURE BUTTON-ONLY HANDHELD CONTROLLER === */
-map.dragging.disable(); map.touchZoom.disable(); map.doubleClickZoom.disable(); map.scrollWheelZoom.disable(); map.boxZoom.disable();
+['dragging','touchZoom','doubleClickZoom','scrollWheelZoom','boxZoom','tapHold'].forEach(h => map[h] && map[h].disable());
 $('q').setAttribute('readonly', 'readonly'); $('q').setAttribute('inputmode', 'none');
 let gStack = [], gIdx = 0, gLayIdx = 0, gSheetIdx = 0, gObjPick = false, gDispMode = 0, gSosHintUntil = 0;
 let gKbdOn = true, gKr = 0, gKc = 0;
@@ -2684,7 +2684,7 @@ document.addEventListener('webkitfullscreenchange', () => setTimeout(() => map.i
 $('gDeck').addEventListener('click', () => {
   if (!gFsTried && !gIsFs() && gCanFs()) { gFsTried = true; gToggleFs(true); }
 });
-setMapRot(true); setTimeout(() => map.invalidateSize(), 150);
+try { setMapRot(true); } catch (e) {} setTimeout(() => map.invalidateSize(), 150);
 </script>
 
 </body>
