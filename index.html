@@ -1026,7 +1026,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
   #gScreen #sheet button { border-radius: 2px !important; }
 
   #gScreen #ip {
-    left: auto !important; right: 0 !important; top: 44px !important; bottom: auto !important;
+    left: auto !important; right: 0 !important; top: 8px !important; bottom: auto !important;
     width: 66% !important; max-width: 260px !important; max-height: 70% !important; overflow-y: auto;
     border-radius: 0 !important; padding: 8px 10px 9px !important;
     background: rgba(16, 18, 19, .94) !important; color: #e8ece9 !important;
@@ -1057,8 +1057,8 @@ svg.leaflet-image-layer.leaflet-interactive path {
   #gScreen #sb input { border-radius: 0 !important; }
 
   #gScreen #nav {
-    left: auto !important; right: 0 !important; bottom: 46px !important;
-    width: 76% !important; max-width: 300px !important;
+    left: auto !important; right: 0 !important; top: 8px !important; bottom: auto !important;
+    width: 72% !important; max-width: 272px !important;
     border-radius: 0 !important;
     background: rgba(16, 18, 19, .95) !important;
     border: 1px solid #3c4245 !important; border-right: 0 !important;
@@ -1067,7 +1067,11 @@ svg.leaflet-image-layer.leaflet-interactive path {
     padding: 7px 10px 10px !important;
     animation: gSlideIn .14s ease-out;
   }
-  body.nav-on #gScreen #ip { top: 44px !important; bottom: auto !important; }
+  #gScreen #navA { width: 42px !important; height: 42px !important; }
+  #gScreen #nav .big { font-size: 16px !important; }
+  #gScreen #navB, #gScreen #navE, #gScreen #navN { font-size: 11px !important; }
+  body.nav-on #gScreen #calPill { display: none !important; }
+  body.nav-on #gScreen #ip { top: 108px !important; bottom: auto !important; max-height: 48% !important; }
   .gFocus { outline: 2px solid #e6eae7 !important; outline-offset: 1px; box-shadow: none !important; background-color: #363c3f !important; color: #fff !important; }
 
   /* Built-in Hardware D-Pad Keyboard inside #sb */
@@ -2153,7 +2157,7 @@ function navFollow(t) {
   $('nav').style.display = 'flex'; document.body.classList.add('nav-on');
   $('navN').textContent = '→ ' + navT.name;
   navUpdate();
-  if (me) map.panTo(me); else map.fitBounds(navTrk.getBounds(), { padding: [40, 40] });
+  if (me) { locLock = true; centerOnMe(Math.max(map.getZoom(), 15), true); } else map.fitBounds(navTrk.getBounds(), { padding: [40, 40] });
   if (!rt.hasAlt && navigator.onLine) {
     const n = Math.min(100, rt.pts.length), S = [], idxs = [];
     for (let i = 0; i < n; i++) { const k = Math.round(i * (rt.pts.length - 1) / Math.max(1, n - 1)); idxs.push(k); S.push(rt.pts[k]); }
@@ -2176,7 +2180,7 @@ function navFollowRoute() {
 }
 function navTo(ll, name) { navStop(); sheet(); startWatch(); navT = { ll, name, done: false };
   navLine = L.polyline([], { color: '#E24B4A', weight: 3, dashArray: '6 7' }).addTo(map); navDot = L.circleMarker(ll, { radius: 8, color: '#fff', weight: 2.5, fillColor: '#E24B4A', fillOpacity: 1 }).addTo(map);
-  $('nav').style.display = 'flex'; document.body.classList.add('nav-on'); $('navN').textContent = '→ ' + name; $('navProg').firstChild.style.width = '0%'; navUpdate(); if (me) map.fitBounds(L.latLngBounds([me, ll]), { padding: [60, 60] }); }
+  $('nav').style.display = 'flex'; document.body.classList.add('nav-on'); $('navN').textContent = '→ ' + name; $('navProg').firstChild.style.width = '0%'; navUpdate(); if (me) { locLock = true; centerOnMe(Math.max(map.getZoom(), 15), true); } else map.setView(ll, Math.max(map.getZoom(), 15)); }
 function navStop() { if (navLine) map.removeLayer(navLine); if (navDot) map.removeLayer(navDot); if (navTrk) map.removeLayer(navTrk); navT = navLine = navDot = navTrk = null; $('nav').style.display = 'none'; document.body.classList.remove('nav-on'); }
 function navUpdate() { if (!navT) return;
   if (navT.rt) {
@@ -2280,7 +2284,7 @@ startWatch();
 /* === PURE BUTTON-ONLY HANDHELD CONTROLLER === */
 ['dragging','touchZoom','doubleClickZoom','scrollWheelZoom','boxZoom','tapHold'].forEach(h => map[h] && map[h].disable());
 $('q').setAttribute('readonly', 'readonly'); $('q').setAttribute('inputmode', 'none');
-let gStack = [], gIdx = 0, gLayIdx = 0, gSheetIdx = 0, gObjPick = false, gDispMode = 0, gSosHintUntil = 0;
+let gStack = [], gIdx = 0, gLayIdx = 0, gSheetIdx = 0, gObjPick = false, gDispMode = 0, gSosHintUntil = 0, gNavExitUntil = 0;
 let gKbdOn = true, gKr = 0, gKc = 0;
 const gKbdRows = [
   ['A','B','C','Č','Ć','D','E'],
@@ -2556,6 +2560,11 @@ function gKey(k) {
       if (me) $('bLoc').click();
       gUpdateCross(); gTickHud(); return;
     }
+    if (navT) {
+      if (Date.now() < gNavExitUntil) { gNavExitUntil = 0; navStop(); gTickHud(); }
+      else { gNavExitUntil = Date.now() + 3000; gTickHud(); }
+      return;
+    }
     return;
   }
   if (menuOpen) {
@@ -2700,9 +2709,12 @@ function gTickHud() {
   } else if (rec) {
     st.classList.add('rec'); tag.textContent = rec.paused ? 'PAUZA' : 'SNIMA';
     txt.textContent = fmtD(stats(rec.pts).d) + ' · ' + fmtT(Date.now() - rec.t0);
+  } else if (Date.now() < gNavExitUntil && navT) {
+    st.classList.add('rec'); tag.textContent = 'IZLAZ?';
+    txt.textContent = 'Pritisni NAZAD opet za prekid';
   } else if (navT) {
-    st.classList.remove('rec'); tag.textContent = 'RUTA';
-    txt.textContent = ($('navD').textContent || '—') + ' · ' + (navT.name || 'Cilj');
+    st.classList.remove('rec'); tag.textContent = navT.rt ? 'RUTA' : 'MARKER';
+    txt.textContent = ($('navD').textContent || '—') + ' · ' + (navT.name || 'Cilj') + ' · 2×NAZAD izlaz';
   } else {
     st.classList.remove('rec'); tag.textContent = mapRot ? 'SMJER GORE' : 'SJEVER GORE';
     txt.textContent = (!oriOn && window.DeviceOrientationEvent && DeviceOrientationEvent.requestPermission) ? 'Pritisni OK za kompas' : (me ? 'GPS ±' + Math.round(meAcc) + ' m · MENU alati' : 'Tražim GPS · MENU alati');
