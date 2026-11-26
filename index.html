@@ -666,7 +666,302 @@ svg.leaflet-image-layer.leaflet-interactive path {
 		print-color-adjust: exact;
 		}
 	}
+
+  /* === GARMIN / SOS HANDHELD SHELL === */
+  html, body { background: #141617 !important; overflow: hidden; }
+  body { display: flex; flex-direction: column; height: 100dvh; max-width: 480px; margin: 0 auto; background: #181a1b; box-shadow: 0 0 40px rgba(0,0,0,.6); }
+  #gTop { flex: none; display: flex; align-items: center; justify-content: space-between; padding: calc(6px + var(--safe-t)) 14px 6px; background: #181a1b; color: #e2e6e3; font: 600 12px/1 system-ui, -apple-system, sans-serif; letter-spacing: .02em; font-variant-numeric: tabular-nums; border-bottom: 1px solid #26292b; z-index: 1200; }
+  #gTop .sig { display: inline-flex; align-items: flex-end; gap: 2px; height: 13px; }
+  #gTop .sig i { display: block; width: 3px; border-radius: 1px; background: #3b4043; }
+  #gTop .sig i.on { background: #7fb069; }
+  #gTop .mid { display: inline-flex; align-items: center; gap: 8px; color: #f2f4f2; font-size: 12.5px; }
+  #gTop .bat { display: inline-flex; align-items: center; gap: 5px; color: #b8c0bb; }
+  #gScreen { position: relative; flex: 1; min-height: 0; margin: 6px 8px 0; border-radius: 14px; overflow: hidden; border: 2px solid #2a2e30; box-shadow: inset 0 0 0 1px rgba(0,0,0,.5); background: #ebe6d7; }
+  #gScreen #map { position: absolute; inset: 0; width: 100%; height: 100%; }
+  #gScreen #sight { position: absolute; inset: 0; }
+  #gScreen #compass { position: absolute; top: 10px; left: 10px; width: 52px; padding: 6px 0 4px; border-radius: 14px; background: rgba(24,26,27,.88); color: #f2f4f2; border: 1.5px solid #393e41; box-shadow: 0 3px 10px rgba(0,0,0,.35); }
+  #gScreen #compass #dial { width: 38px; height: 38px; color: #f2f4f2; }
+  #gScreen #compass #hdgT { font-size: 10px; color: #d6dbd7; }
+  #gScreen #compass #rotM { font-size: 9px; color: #9aa39d; }
+  #gScreen #calPill { position: absolute; top: 10px; right: 10px; left: auto; transform: none; background: rgba(24,26,27,.9); color: #e2e6e3; border: 1px solid #393e41; font-size: 11px; padding: 5px 10px; }
+  #gScreen .leaflet-top.leaflet-right, #gScreen .leaflet-mid.leaflet-right, #gScreen .leaflet-top.leaflet-left { display: none !important; }
+  #gScreen #fabs { display: none !important; }
+  #gScreen #dr { display: none !important; }
+  #gScreen #sheet, #gScreen #scp, #gScreen #sb, #gScreen #ip, #gScreen #nav, #gScreen #calBar { position: absolute !important; }
+  #gScreen #sheet { left: 6px; right: 6px; top: 6px; bottom: 44px; max-height: none; border-radius: 12px; background: rgba(24,26,27,.96); color: #ecefe9; border: 1px solid #393e41; z-index: 1150; }
+  #gScreen #sheet input, #gScreen #sheet select { background: #26292b; color: #f2f4f2; border-color: #3d4245; }
+  #gScreen #sheet button.gray { background: #2c3033; color: #e2e6e3; }
+  #gScreen #sb { left: 6px; right: 6px; top: 6px; background: rgba(24,26,27,.96); color: #f2f4f2; border: 1px solid #393e41; z-index: 1160; }
+  #gScreen #sb input { background: #26292b; color: #f2f4f2; border-color: #3d4245; }
+  #gScreen #ip { left: 6px; right: 6px; bottom: 44px; background: rgba(24,26,27,.92); color: #ecefe9; border: 1px solid #393e41; font-size: 12px; padding: 8px 10px; z-index: 1050; }
+  #gScreen #nav { left: 6px; right: 6px; bottom: 44px; background: rgba(24,26,27,.94); color: #f2f4f2; border: 1px solid #393e41; z-index: 1060; padding: 8px 10px; }
+  #gScreen #navB, #gScreen #navE, #gScreen #navN { color: #b8c0bb; }
+  #gScreen #calBar { left: 6px; right: 6px; bottom: 6px; padding: 10px 12px; border-radius: 14px; background: rgba(24,26,27,.95); color: #f2f4f2; border: 1px solid #3c4245; z-index: 1140; }
+  #gScreen #calBadge { color: #f2f4f2; }
+  #gScreen #calHint { color: #b6beb8; font-size: 11.5px; margin-bottom: 8px; }
+  #gScreen #calDialWrap { height: 42px; margin: 2px 0 8px; background: #25282a; }
+  #gScreen #calTrack i.m15 { background: #f2f4f2; }
+  #gScreen #calBar .actM button, #gScreen #bRst { background: #2b2f31; color: #ecefe9; border: 1px solid #3e4447; }
+  #gStatus { position: absolute; left: 8px; right: 8px; bottom: 8px; z-index: 980; display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 12px; border-radius: 10px; background: rgba(20,22,23,.92); color: #f2f4f2; border: 1px solid #34393b; font: 700 12.5px/1.2 system-ui, -apple-system, sans-serif; font-variant-numeric: tabular-nums; box-shadow: 0 3px 10px rgba(0,0,0,.35); pointer-events: auto; cursor: pointer; }
+  #gStatus .tag { color: #8ec974; letter-spacing: .04em; text-transform: uppercase; font-size: 11px; }
+  #gStatus.rec .tag { color: #ff6b57; }
+  #gMenu { display: none; position: absolute; inset: 0; z-index: 1130; background: rgba(18,20,21,.96); color: #ecefe9; flex-direction: column; }
+  #gMenu.on { display: flex; }
+  #gMenuHd { display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; border-bottom: 1px solid #2d3234; font: 700 13px/1 system-ui; letter-spacing: .06em; text-transform: uppercase; color: #9ea8a1; }
+  #gMenuList { flex: 1; overflow-y: auto; padding: 8px; display: flex; flex-direction: column; gap: 5px; }
+  .gItem { display: flex; align-items: center; justify-content: space-between; padding: 11px 12px; border-radius: 10px; background: #222628; border: 1.5px solid transparent; color: #e6eae7; font: 600 14px/1.2 system-ui; cursor: pointer; user-select: none; }
+  .gItem small { font-size: 11.5px; font-weight: 500; color: #96a09a; }
+  .gItem.sel { background: #2b3a2e; border-color: #7fb069; color: #fff; box-shadow: 0 0 0 1px rgba(127,176,105,.35); }
+  .gItem.sel small { color: #cfe6c4; }
+  #gMenuFt { padding: 7px 14px; border-top: 1px solid #2d3234; font: 500 11px/1 system-ui; color: #848f88; display: flex; justify-content: space-between; }
+
+  /* Tactile Molded Outdoor Control Deck */
+  #gDeck {
+    position: relative; flex: none;
+    padding: 16px 18px calc(18px + var(--safe-b));
+    background-color: #1f2122;
+    background-image:
+      radial-gradient(rgba(255,255,255,.035) 1px, transparent 0),
+      radial-gradient(rgba(0,0,0,.35) 1px, transparent 0),
+      linear-gradient(180deg, #272a2c 0%, #1b1d1e 55%, #161819 100%);
+    background-size: 6px 6px, 6px 6px, 100% 100%;
+    background-position: 0 0, 3px 3px, 0 0;
+    border-top: 1px solid #313538;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.06);
+    display: grid; grid-template-columns: 78px 1fr 82px; align-items: center; gap: 10px;
+    user-select: none; -webkit-user-select: none; touch-action: manipulation;
+  }
+  /* Side grip ribs */
+  #gDeck::before, #gDeck::after {
+    content: ''; position: absolute; top: 10px; bottom: 14px; width: 6px; pointer-events: none; opacity: .45;
+    background: repeating-linear-gradient(-35deg, #0d0e0f 0 2px, transparent 2px 6px);
+  }
+  #gDeck::before { left: 4px; } #gDeck::after { right: 4px; background: repeating-linear-gradient(35deg, #0d0e0f 0 2px, transparent 2px 6px); }
+
+  /* Left side MENU / NAZAD with recessed divider notch */
+  .gSide { display: flex; flex-direction: column; gap: 12px; align-items: stretch; }
+  .gNotch { height: 5px; margin: 2px 6px; border-radius: 99px; background: #121415; box-shadow: inset 0 1px 2px rgba(0,0,0,.85), 0 1px 0 rgba(255,255,255,.06); }
+  .gWell { padding: 3px; border-radius: 13px; background: #101213; box-shadow: inset 0 2px 5px rgba(0,0,0,.85), 0 1px 0 rgba(255,255,255,.06); }
+  .gBtn {
+    width: 100%; appearance: none;
+    border: 1px solid #3b4044; border-top-color: #4a5055; border-bottom-color: #121415;
+    background: linear-gradient(180deg, #323639 0%, #232628 55%, #1d2022 100%);
+    color: #dfe4e0; border-radius: 10px; padding: 12px 4px;
+    font: 600 11.5px/1 system-ui, -apple-system, sans-serif; letter-spacing: .07em; text-transform: uppercase;
+    box-shadow: 0 3px 5px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.11);
+    cursor: pointer; display: grid; place-items: center; transition: transform .07s, box-shadow .07s;
+  }
+  .gBtn:active { transform: translateY(1.5px); background: linear-gradient(180deg, #1f2224, #282c2f); box-shadow: 0 1px 2px rgba(0,0,0,.7), inset 0 2px 4px rgba(0,0,0,.5); }
+
+  /* Sculpted Continuous Cross D-Pad */
+  .gPad {
+    position: relative; width: 158px; height: 158px; margin: 0 auto;
+    display: grid; grid-template-columns: 50px 58px 50px; grid-template-rows: 50px 58px 50px;
+    align-items: center; justify-items: center;
+  }
+  /* Recessed cross well */
+  .gPad::before, .gPad::after {
+    content: ''; position: absolute; background: #0e1011; pointer-events: none;
+    box-shadow: inset 0 3px 7px rgba(0,0,0,.9), 0 1px 0 rgba(255,255,255,.06);
+  }
+  .gPad::before { top: 0; bottom: 0; left: 46px; right: 46px; border-radius: 18px; }
+  .gPad::after { left: 0; right: 0; top: 46px; bottom: 46px; border-radius: 18px; }
+
+  .gDir {
+    position: relative; z-index: 2; width: 100%; height: 100%;
+    border: 1px solid #3c4145; background: linear-gradient(180deg, #33373a 0%, #232628 65%, #1d2022 100%);
+    color: #d6dcd8; display: grid; place-items: center; padding: 0;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.11), 0 2px 4px rgba(0,0,0,.45);
+    cursor: pointer; transition: transform .07s, background .07s;
+  }
+  .gDir svg { width: 20px; height: 20px; stroke: currentColor; stroke-width: 2.3; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+  .gDir:active { background: #1a1d1f; transform: scale(.96); box-shadow: inset 0 2px 5px rgba(0,0,0,.6); }
+  .gDir.u { grid-column: 2; grid-row: 1; width: 58px; height: 50px; border-radius: 14px 14px 3px 3px; border-bottom: 0; padding-bottom: 4px; }
+  .gDir.d { grid-column: 2; grid-row: 3; width: 58px; height: 50px; border-radius: 3px 3px 14px 14px; border-top: 0; padding-top: 4px; }
+  .gDir.l { grid-column: 1; grid-row: 2; width: 50px; height: 58px; border-radius: 14px 3px 3px 14px; border-right: 0; padding-right: 4px; }
+  .gDir.r { grid-column: 3; grid-row: 2; width: 50px; height: 58px; border-radius: 3px 14px 14px 3px; border-left: 0; padding-left: 4px; }
+  .gPadCore {
+    position: relative; z-index: 2; grid-column: 2; grid-row: 2; width: 58px; height: 58px;
+    background: #232628; display: grid; place-items: center;
+  }
+  .gOk {
+    position: relative; z-index: 3; width: 48px; height: 48px; border-radius: 50%;
+    border: 1.5px solid #484e52; border-bottom-color: #111314;
+    background:
+      radial-gradient(rgba(255,255,255,.07) 1px, transparent 0),
+      radial-gradient(circle at 38% 30%, #3a3f43 0%, #222527 72%, #191c1e 100%);
+    background-size: 4px 4px, 100% 100%;
+    color: #f4f7f5; font: 700 13px/1 system-ui; letter-spacing: .05em;
+    box-shadow: 0 0 0 4px #121415, 0 3px 7px rgba(0,0,0,.6), inset 0 1px 1px rgba(255,255,255,.16);
+    cursor: pointer; display: grid; place-items: center; transition: transform .07s, border-color .1s;
+  }
+  .gOk:active { transform: scale(.93); border-color: #7fb069; background-color: #243326; }
+
+  /* Right molded dual pod: Zoom Rocker + Chamfered Knurled SOS */
+  .gRightPod {
+    display: grid; grid-template-columns: 36px 34px; gap: 5px; height: 142px;
+    padding: 4px; border-radius: 16px; background: #0f1112;
+    box-shadow: inset 0 3px 7px rgba(0,0,0,.9), 0 1px 0 rgba(255,255,255,.06);
+  }
+  .gZoom {
+    display: flex; flex-direction: column; border-radius: 12px; overflow: hidden;
+    border: 1px solid #3c4145; border-top-color: #4a5055; border-bottom-color: #121415;
+    background: linear-gradient(180deg, #323639 0%, #222527 50%, #1c1f21 100%);
+    box-shadow: 0 3px 5px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.1);
+  }
+  .gZoom button {
+    flex: 1; border: 0; background: transparent; color: #e2e7e3;
+    font: 500 22px/1 system-ui; cursor: pointer; display: grid; place-items: center;
+  }
+  .gZoom .zDiv { height: 2px; margin: 0 6px; background: #141617; box-shadow: 0 1px 0 rgba(255,255,255,.08); }
+  .gZoom button:active { background: rgba(0,0,0,.35); }
+
+  .gSos {
+    border-radius: 8px 12px 12px 8px;
+    border: 1px solid #ff945e; border-bottom: 2px solid #7d2506;
+    background:
+      radial-gradient(rgba(0,0,0,.22) 1px, transparent 0),
+      linear-gradient(180deg, #f0622b 0%, #d44714 60%, #b5360a 100%);
+    background-size: 4px 4px, 100% 100%;
+    color: #141617; font: 800 13px/1 system-ui; letter-spacing: .12em;
+    writing-mode: vertical-rl; text-orientation: mixed; transform: rotate(180deg);
+    display: grid; place-items: center;
+    clip-path: polygon(0 6%, 100% 0, 100% 100%, 0 94%);
+    box-shadow: 0 3px 8px rgba(235,94,40,.35), inset 0 1px 0 rgba(255,255,255,.28);
+    cursor: pointer; transition: transform .07s, filter .07s;
+  }
+  .gSos:active { filter: brightness(.86); transform: rotate(180deg) scale(.96); }
+
+  /* Pure Display Screen (No Touch on Map/Buttons — Controlled 100% by Bottom Deck) */
+  #gScreen, #gScreen * { pointer-events: none !important; }
+  #gScreen input, #gScreen select, #gScreen textarea { pointer-events: auto !important; }
+  #gScreen #calBar .actM, #gScreen #calBar .act { display: none !important; }
+  #gScreen #sheet > .row:first-child, #gScreen #ip button.x, #gScreen #nav button.x, #gScreen #sb button.x { display: none !important; }
+  #gCalKeys { display: flex; justify-content: space-between; font: 600 11px/1 system-ui; color: #9aa69e; margin-top: 4px; letter-spacing: .02em; }
+  /* Precision Center Crosshair */
+  #gCross { display: none; position: absolute; left: 50%; top: 50%; width: 44px; height: 44px; margin: -22px 0 0 -22px; z-index: 960; pointer-events: none; }
+  #gCross.on { display: block; }
+  #gCross svg { width: 100%; height: 100%; display: block; filter: drop-shadow(0 0 2px rgba(0,0,0,.85)); }
+  #gCross.aim { --cc: #f0622b; }
+  #gCross:not(.aim) { --cc: #ffffff; }
+  /* Arrow-focused highlight inside #sheet and #sr */
+  .gFocus { outline: 2.5px solid #7fb069 !important; outline-offset: 2px; box-shadow: 0 0 0 4px rgba(127,176,105,.28) !important; background-color: #2b3a2e !important; color: #fff !important; }
+
+  /* SOS hold-to-activate feedback & outdoor display modes */
+  .gSos { position: relative; overflow: hidden; }
+  .gSos.hold { box-shadow: 0 0 18px rgba(255,95,40,.9), inset 0 0 0 2px #fff; filter: brightness(1.15); }
+  body.g-sun #map { filter: contrast(1.18) saturate(1.15); }
+  body.g-night #map { filter: invert(1) hue-rotate(180deg) brightness(.72) contrast(1.15); }
+
+  /* === AVIONICS COCKPIT SIDE-WINDOWS === */
+  @keyframes gSlideIn { from { opacity: 0; transform: translateX(18px); } to { opacity: 1; transform: translateX(0); } }
+
+  /* Side-sliding Menu Window (right 64%, live map stays visible on left) */
+  #gMenu {
+    left: auto !important; right: 0 !important; top: 8px !important; bottom: 44px !important;
+    width: 66% !important; max-width: 268px !important;
+    border-radius: 10px 0 0 10px !important;
+    background: rgba(11, 16, 21, .94) !important;
+    backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+    border: 1px solid #2c414d !important; border-right: 0 !important;
+    border-left: 3px solid #4cc9f0 !important;
+    box-shadow: -8px 4px 24px rgba(0,0,0,.6) !important;
+    animation: gSlideIn .16s ease-out;
+  }
+  #gMenuHd {
+    padding: 8px 11px !important; background: rgba(76, 201, 240, .10);
+    border-bottom: 1px solid #263844 !important;
+    color: #7ee0ff !important; font: 700 11px/1 ui-monospace, Menlo, monospace !important;
+    letter-spacing: .1em !important;
+  }
+  #gMenuList { padding: 6px !important; gap: 4px !important; }
+  .gItem {
+    flex-direction: column; align-items: flex-start !important; gap: 2px;
+    padding: 8px 10px !important; border-radius: 6px !important;
+    background: rgba(255,255,255,.04) !important;
+    border: 1px solid rgba(255,255,255,.06) !important;
+    font: 600 12.5px/1.2 system-ui !important;
+  }
+  .gItem small { font: 500 10.5px/1.1 ui-monospace, Menlo, monospace !important; color: #87a0ad !important; }
+  .gItem.sel {
+    background: rgba(76, 201, 240, .18) !important;
+    border-color: #4cc9f0 !important; color: #fff !important;
+    box-shadow: inset 3px 0 0 #4cc9f0 !important;
+  }
+  .gItem.sel small { color: #bfefff !important; }
+  #gMenuFt {
+    padding: 6px 10px !important; font: 600 10px/1 ui-monospace, Menlo, monospace !important;
+    color: #718b99 !important; border-top: 1px solid #22323d !important;
+  }
+
+  /* Side-sliding Sheet Window (Routes, Markers, SOS, Sunset) */
+  #gScreen #sheet {
+    left: auto !important; right: 0 !important; top: 8px !important; bottom: 44px !important;
+    width: 72% !important; max-width: 295px !important;
+    border-radius: 10px 0 0 10px !important; padding: 10px 11px !important;
+    background: rgba(11, 16, 21, .95) !important; color: #e4eef4 !important;
+    backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+    border: 1px solid #2c414d !important; border-right: 0 !important;
+    border-left: 3px solid #7fb069 !important;
+    box-shadow: -8px 4px 24px rgba(0,0,0,.6) !important;
+    font-size: 12.5px !important;
+    animation: gSlideIn .16s ease-out;
+  }
+  #gScreen #sheet b { color: #f2f8fc; }
+  #gScreen #sheet .item { border-color: #20303a !important; padding: 7px 0 !important; }
+  #gScreen #sheet small { color: #8da6b4 !important; }
+
+  /* Cockpit Side Advisory / Message Window (#ip) */
+  #gScreen #ip {
+    left: auto !important; right: 0 !important; top: 44px !important; bottom: auto !important;
+    width: 64% !important; max-width: 250px !important; max-height: 55% !important; overflow-y: auto;
+    border-radius: 8px 0 0 8px !important; padding: 8px 10px 9px !important;
+    background: rgba(11, 16, 21, .92) !important; color: #e4eef4 !important;
+    backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+    border: 1px solid #2c414d !important; border-right: 0 !important;
+    border-left: 3px solid #f59e0b !important;
+    box-shadow: -6px 4px 18px rgba(0,0,0,.55) !important;
+    font: 500 11.5px/1.38 ui-monospace, Menlo, system-ui, monospace !important;
+    animation: gSlideIn .16s ease-out;
+  }
+  #gScreen #ip::before {
+    content: 'PORUKA · INFO'; display: block; margin-bottom: 5px; padding-bottom: 4px;
+    border-bottom: 1px solid #22323d; color: #fbbf24;
+    font: 700 9.5px/1 ui-monospace, Menlo, monospace; letter-spacing: .12em;
+  }
+  #gScreen #ip button { margin-top: 6px; padding: 6px 8px; font-size: 11px; border-radius: 6px; }
+
+  /* Cockpit Side Search Window (#sb) */
+  #gScreen #sb {
+    left: auto !important; right: 0 !important; top: 8px !important;
+    width: 72% !important; max-width: 290px !important;
+    border-radius: 10px 0 0 10px !important;
+    background: rgba(11, 16, 21, .95) !important;
+    border: 1px solid #2c414d !important; border-right: 0 !important;
+    border-left: 3px solid #4cc9f0 !important;
+    box-shadow: -8px 4px 20px rgba(0,0,0,.6) !important;
+    animation: gSlideIn .16s ease-out;
+  }
+
+  /* Cockpit Side Navigation Strip (#nav) */
+  #gScreen #nav {
+    left: auto !important; right: 0 !important; bottom: 46px !important;
+    width: 76% !important; max-width: 300px !important;
+    border-radius: 10px 0 0 10px !important;
+    background: rgba(11, 16, 21, .93) !important;
+    border: 1px solid #2c414d !important; border-right: 0 !important;
+    border-left: 3px solid #7fb069 !important;
+    box-shadow: -6px 4px 18px rgba(0,0,0,.55) !important;
+    padding: 7px 10px 10px !important;
+    animation: gSlideIn .16s ease-out;
+  }
+  body.nav-on #gScreen #ip { top: 44px !important; bottom: auto !important; }
+  .gFocus { outline: 2px solid #4cc9f0 !important; outline-offset: 1px; box-shadow: 0 0 0 3px rgba(76,201,240,.25) !important; background-color: rgba(76,201,240,.22) !important; color: #fff !important; }
 </style>
+
+
+
+
 <style>
   :root { --pine:#2f4a3a; --onpine:#fff; --moss:#6b8f4e; --sand:rgba(47,74,58,.08); --paper:rgba(251,248,241,.94); --ember:#d9702a; --ink:#23271f; --mute:#6f7667; --line:rgba(35,39,31,.12); --ifx:none; --safe-t:env(safe-area-inset-top,0px); --safe-b:env(safe-area-inset-bottom,0px); }
   @media (prefers-color-scheme: dark) { :root { --pine:#9cc387; --onpine:#10190f; --moss:#8fb27a; --sand:rgba(236,230,212,.09); --paper:rgba(30,36,31,.94); --ink:#ece6d4; --mute:#9aa392; --line:rgba(236,230,212,.15); --ifx:invert(.9); } }
@@ -778,7 +1073,17 @@ svg.leaflet-image-layer.leaflet-interactive path {
 </style>
 </head>
 <body>
+<div id="gTop">
+  <span class="sig" id="gSig" title="GPS signal"><i style="height:4px"></i><i style="height:7px"></i><i style="height:10px"></i><i style="height:13px"></i></span>
+  <span class="mid"><span id="gAlt">▲ — m</span><span>•</span><span id="gHdgTop">—°</span></span>
+  <span class="bat"><span id="gClk">--:--</span><span id="gBat">🔋</span></span>
+</div>
+<div id="gScreen">
 <div id="map"></div>
+<div id="gCross" aria-hidden="true"><svg viewBox="0 0 44 44">
+  <circle cx="22" cy="22" r="5.5" fill="none" stroke="var(--cc)" stroke-width="1.8"/>
+  <path d="M22 2v12M22 30v12M2 22h12M30 22h12" stroke="var(--cc)" stroke-width="1.8" stroke-linecap="round"/>
+</svg></div>
 <div id="sight" aria-hidden="true"><svg viewBox="0 0 100 100">
   <line x1="50" y1="11" x2="50" y2="48.2" stroke="rgba(255,255,255,.75)" stroke-width="0.9" stroke-dasharray="1.4 2.2"/>
   <line x1="50" y1="11" x2="50" y2="48.2" stroke="var(--scol)" stroke-width="0.45" stroke-dasharray="1.4 2.2"/>
@@ -792,6 +1097,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
   <div class="hd"><span id="calBadge"><span class="dot"></span><span id="calVal">Okreni kartu da se poklopi</span></span></div>
   <div id="calHint">Usmjeri vrh telefona (vodoravno) prema poznatom mjestu pa ga dodirni na mapi. Ili „Po sjeni“ (stani da ti sjena pada ispred, ne gledaj u Sunce), „Po hodanju“ ili skala.</div>
   <div id="calDialWrap"><div id="calWheel" aria-label="Skala za poravnanje po stepenima"><div id="calTrack"><div id="calInner"></div></div></div></div>
+  <div id="gCalKeys"><span>◄ ► Pomjeri 1°</span><span>OK Gotovo · NAZAD</span></div>
   <div class="actM">
     <button id="bShad" onclick="calSun(true)">Po sjeni</button>
     <button id="bSun" onclick="calSun()"><svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2.5M12 19v2.5M2.5 12H5M19 12h2.5M5.3 5.3l1.8 1.8M16.9 16.9l1.8 1.8M18.7 5.3l-1.8 1.8M7.1 16.9l-1.8 1.8"/></svg><span>Prema Suncu</span></button>
@@ -838,6 +1144,35 @@ svg.leaflet-image-layer.leaflet-interactive path {
   <div class="pane">
     <button class="tb " onclick="dr(false);offOpen()"><svg class="i" viewBox="0 0 24 24"><path d="M12 4v11.5M7 11l5 5 5-5"/><path d="M4.5 20h15"/></svg><span>Offline mape</span></button><button class="tb gray" id="bFollow"><svg class="i" viewBox="0 0 24 24"><path d="M12 3l7 17-7-4-7 4z"/></svg><span id="bFollowT">Prati</span></button><button class="tb " id="bOrient"><svg class="i" viewBox="0 0 24 24"><path d="M19.5 12a7.5 7.5 0 1 1-2.6-5.7"/><path d="M19.5 4.5v4h-4"/></svg><span id="bOrientT">Sjever gore</span></button>
     <button class="tb " id="bCal"><svg class="i" viewBox="0 0 24 24"><path d="M12 4l-2.6 3.8h5.2z"/><circle cx="12" cy="11.5" r="1.1" fill="currentColor" stroke="none"/><circle cx="12" cy="15.5" r="1.1" fill="currentColor" stroke="none"/><circle cx="12" cy="19.5" r="1.1" fill="currentColor" stroke="none"/></svg><span id="bCalT">Poravnaj</span></button><button class="tb " onclick="dr(false);namesOpen()"><svg class="i" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4.2-4.2"/></svg><span>Imena za pretragu (offline)</span></button><button class="tb gray" id="bClear"><svg class="i" viewBox="0 0 24 24"><path d="M4.5 7h15M9.5 7V4.5h5V7M6.5 7l1 12.5h9l1-12.5"/></svg><span>Obriši</span></button>
+  </div>
+</div>
+<div id="gStatus" onclick="gMenuToggle(true)"><span class="tag" id="gStatTag">SPREMNO</span><span id="gStatTxt">Pritisni MENU ili OK</span></div>
+<div id="gMenu" aria-label="Terenski meni">
+  <div id="gMenuHd"><span id="gMenuTitle">MENI</span><span id="gMenuPos">1/7</span></div>
+  <div id="gMenuList"></div>
+  <div id="gMenuFt"><span>▲▼ Izbor · OK Potvrdi</span><span>NAZAD Izlaz</span></div>
+</div>
+</div>
+<div id="gDeck" aria-label="Kontrole uređaja">
+  <div class="gSide">
+    <div class="gWell"><button class="gBtn" data-k="menu">MENU</button></div>
+    <div class="gNotch" aria-hidden="true"></div>
+    <div class="gWell"><button class="gBtn" data-k="back">NAZAD</button></div>
+  </div>
+  <div class="gPad">
+    <button class="gDir u" data-k="up" data-rep="1" aria-label="Gore"><svg viewBox="0 0 24 24"><path d="M6 15l6-6 6 6"/></svg></button>
+    <button class="gDir l" data-k="left" data-rep="1" aria-label="Lijevo"><svg viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg></button>
+    <div class="gPadCore"><button class="gOk" data-k="ok" aria-label="Potvrdi">OK</button></div>
+    <button class="gDir r" data-k="right" data-rep="1" aria-label="Desno"><svg viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button>
+    <button class="gDir d" data-k="down" data-rep="1" aria-label="Dolje"><svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></button>
+  </div>
+  <div class="gRightPod">
+    <div class="gZoom">
+      <button data-k="zin" data-rep="1" aria-label="Uvećaj">+</button>
+      <div class="zDiv" aria-hidden="true"></div>
+      <button data-k="zout" data-rep="1" aria-label="Umanji">−</button>
+    </div>
+    <button class="gSos" data-k="sos" aria-label="Hitno SOS">SOS</button>
   </div>
 </div>
 <input type="file" id="gpxIn" accept=".gpx,.xml,application/gpx+xml,text/xml" multiple hidden>
@@ -1899,6 +2234,293 @@ const sosSms = () => { location.href = 'sms:?&body=' + encodeURIComponent(sosTex
 
 if ('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('sw.js').catch(() => {});
 startWatch();
+
+/* === PURE BUTTON-ONLY HANDHELD CONTROLLER === */
+map.dragging.disable(); map.touchZoom.disable(); map.doubleClickZoom.disable(); map.scrollWheelZoom.disable(); map.boxZoom.disable();
+let gStack = [], gIdx = 0, gLayIdx = 0, gSheetIdx = 0, gObjPick = false, gDispMode = 0, gSosHintUntil = 0;
+const gDispNames = ['Standard', 'Sunce (kontrast)', 'Noć (tamno)'];
+const gLayers = [
+  { name: 'Topo', layer: topo },
+  { name: 'Street', layer: street },
+  { name: 'Satelit', layer: sat }
+];
+function gBeep(strong = false) { calTick(strong); }
+function gAimActive() { return !!(pickCb || mode || gObjPick); }
+function gUpdateCross() {
+  const cr = $('gCross'), menuOpen = $('gMenu').classList.contains('on'), shOpen = $('sheet').style.display === 'block';
+  const show = !menuOpen && !shOpen && (!calOn || gObjPick) && (gAimActive() || !locLock);
+  cr.classList.toggle('on', show);
+  cr.classList.toggle('aim', gAimActive());
+}
+function gSheetItems() {
+  if ($('sb').style.display === 'block') return [...$('sr').querySelectorAll('div,button')].filter(el => el.offsetParent !== null);
+  if ($('sheet').style.display === 'block') return [...$('sheet').querySelectorAll('button')].filter(el => el.offsetParent !== null);
+  if ($('ip').style.display === 'block') return [...$('info').querySelectorAll('button')].filter(el => el.offsetParent !== null);
+  return [];
+}
+function gSheetHighlight(delta = 0) {
+  const items = gSheetItems();
+  document.querySelectorAll('.gFocus').forEach(el => el.classList.remove('gFocus'));
+  if (!items.length) { gSheetIdx = 0; return; }
+  gSheetIdx = (gSheetIdx + delta + items.length) % items.length;
+  const el = items[gSheetIdx];
+  el.classList.add('gFocus');
+  el.scrollIntoView({ block: 'nearest' });
+}
+const _origSheet = sheet;
+sheet = h => { _origSheet(h); gSheetIdx = 0; setTimeout(() => { gSheetHighlight(0); gUpdateCross(); }, 25); };
+new MutationObserver(() => {
+  if ($('sheet').style.display !== 'block' && $('sb').style.display !== 'block') {
+    gSheetIdx = 0; setTimeout(() => gSheetHighlight(0), 25);
+  }
+}).observe(info, { childList: true, subtree: true });
+
+function gMainItems() {
+  const list = [];
+  if (navT) list.push({ t: 'Prekini navigaciju', s: navT.name || 'Aktivna ruta', fn: () => { navStop(); gMenuClose(); gTickHud(); } });
+  if (rec) list.push({ t: rec.paused ? 'Nastavi snimanje' : 'Pauziraj snimanje', s: fmtD(stats(rec.pts).d), fn: () => { $('bPause').click(); gMenuRender(); } });
+  list.push(
+    { t: 'Moja lokacija', s: me ? fmtLL(me) : 'Traži GPS', fn: () => { gMenuClose(); $('bLoc').click(); gUpdateCross(); gTickHud(); } },
+    { t: mapRot ? 'Smjer gore: UKLJ.' : 'Sjever gore', s: 'Rotacija karte', fn: () => { setMapRot(!mapRot); gMenuRender(); } },
+    { t: 'Poravnaj kompas', s: hdgOff ? fmtSign(hdgOff) : 'Sjene / Sunce / 1°', sub: 'cal' },
+    { t: 'Rute i GPX', s: rec ? 'Snimanje aktivno' : 'Snimi / Uvezi', sub: 'routes' },
+    { t: 'Markeri', s: MK.length + ' tačaka', sub: 'marks' },
+    { t: 'Alati i ekran', s: gLayers[gLayIdx].name, sub: 'tools' },
+    { t: 'Hitno: SOS', s: 'Koordinate i poruka', fn: () => { gMenuClose(); sosOpen(); } }
+  );
+  return list;
+}
+function gSubItems(id) {
+  if (id === 'cal') return [
+    { t: 'Ručno poravnanje (◄► 1°)', s: 'Strelice po 1°', fn: () => { gMenuClose(); gObjPick = false; calToggle(true); gUpdateCross(); } },
+    { t: 'Poravnaj po sjeni', s: 'Leđa Suncu', fn: () => { gMenuClose(); gObjPick = false; calToggle(true); setTimeout(() => calSun(true), 80); } },
+    { t: 'Poravnaj prema Suncu', s: 'Vrh ka Suncu', fn: () => { gMenuClose(); gObjPick = false; calToggle(true); setTimeout(() => calSun(false), 80); } },
+    { t: 'Poravnaj po objektu (krstić)', s: 'Nanišani + OK', fn: () => {
+        gMenuClose(); gObjPick = true; calToggle(true); locLock = false;
+        $('calHint').textContent = 'Pomjeri krstić (▲▼◄►) na poznat objekat na mapi i pritisni OK.';
+        gUpdateCross(); gTickHud();
+      } },
+    { t: 'Poravnaj po hodanju', s: 'Hodaj ravno', fn: () => { gMenuClose(); gObjPick = false; calToggle(true); setTimeout(() => calWalk(), 80); } },
+    { t: 'Deklinacija ' + (declOn ? '✓' : '✗'), s: (declDeg >= 0 ? '+' : '−') + Math.abs(declDeg).toFixed(1) + '°', fn: () => { toggleDecl(); gMenuRender(); } },
+    { t: 'Vrati kompas na 0°', s: 'Reset', fn: () => { calReset(); gMenuRender(); } }
+  ];
+  if (id === 'routes') return [
+    { t: rec ? 'Zaustavi snimanje' : 'Snimaj rutu', s: rec ? fmtD(stats(rec.pts).d) : 'Nova ruta', fn: () => { gMenuClose(); $('bRec').click(); } },
+    { t: 'Spremljene rute', s: 'Prati / GPX', fn: () => { gMenuClose(); tracksOpen(); } },
+    { t: 'Uvezi GPX fajl', s: 'Iz memorije', fn: () => { gMenuClose(); $('gpxIn').click(); } },
+    { t: 'Dionica A→B po stazi', s: 'Krstić + OK', fn: () => { gMenuClose(); locLock = false; setMode('route'); info.textContent = 'Pomjeri krstić na A pa OK, zatim B pa OK.'; gUpdateCross(); gTickHud(); } },
+    { t: 'Vrati me do…', s: 'Navigacija', fn: () => { gMenuClose(); navOpen(); } }
+  ];
+  if (id === 'marks') return [
+    { t: 'Označi ovdje', s: 'Trenutna pozicija', fn: () => { gMenuClose(); markHere(); } },
+    { t: 'Marker na mapi (krstić)', s: 'Nanišani + OK', fn: () => { gMenuClose(); locLock = false; markPick(); info.textContent = 'Pomjeri krstić (▲▼◄►) na tačku i pritisni OK.'; gUpdateCross(); gTickHud(); } },
+    { t: 'Lista markera', s: MK.length + ' spremljenih', fn: () => { gMenuClose(); markList(); } }
+  ];
+  if (id === 'tools') return [
+    { t: 'Sloj karte: ' + gLayers[gLayIdx].name, s: 'OK za promjenu', fn: () => {
+        map.removeLayer(gLayers[gLayIdx].layer);
+        gLayIdx = (gLayIdx + 1) % gLayers.length;
+        map.addLayer(gLayers[gLayIdx].layer);
+        gMenuRender();
+      } },
+    { t: 'Ekran: ' + gDispNames[gDispMode], s: 'OK za promjenu', fn: () => {
+        gDispMode = (gDispMode + 1) % 3;
+        document.body.classList.toggle('g-sun', gDispMode === 1);
+        document.body.classList.toggle('g-night', gDispMode === 2);
+        gMenuRender();
+      } },
+    { t: 'Traži mjesto', s: 'Pretraga', fn: () => { gMenuClose(); toggleSearch(); } },
+    { t: 'Mjeri udaljenost (krstić)', s: 'Nanišani + OK', fn: () => { gMenuClose(); locLock = false; setMode('measure'); info.textContent = 'Pomjeri krstić na tačke i pritiskaj OK.'; gUpdateCross(); gTickHud(); } },
+    { t: 'Bearing (krstić)', s: 'Nanišani + OK', fn: () => { gMenuClose(); locLock = false; setMode('bearing'); info.textContent = 'Pomjeri krstić na cilj i pritisni OK.'; gUpdateCross(); gTickHud(); } },
+    { t: 'Nadmorska visina (krstić)', s: 'Nanišani + OK', fn: () => { gMenuClose(); locLock = false; setMode('elev'); info.textContent = 'Pomjeri krstić na tačku i pritisni OK.'; gUpdateCross(); gTickHud(); } },
+    { t: 'Zalazak sunca', s: 'Mrak / sumrak', fn: () => { gMenuClose(); sunOpen(0); } },
+    { t: 'Offline mape', s: 'Preuzmi zonu', fn: () => { gMenuClose(); offOpen(); } },
+    { t: 'Obriši crteže', s: 'Čista karta', fn: () => { gMenuClose(); $('bClear').click(); gUpdateCross(); gTickHud(); } }
+  ];
+  return gMainItems();
+}
+function gCurMenu() {
+  if (!gStack.length) return { title: 'MENI', items: gMainItems() };
+  const top = gStack[gStack.length - 1];
+  return { title: top.title, items: gSubItems(top.id) };
+}
+function gMenuRender() {
+  const m = gCurMenu(), list = $('gMenuList');
+  if (gIdx >= m.items.length) gIdx = Math.max(0, m.items.length - 1);
+  $('gMenuTitle').textContent = m.title;
+  $('gMenuPos').textContent = (gIdx + 1) + '/' + m.items.length;
+  list.innerHTML = m.items.map((it, i) =>
+    '<div class="gItem' + (i === gIdx ? ' sel' : '') + '"><span>' + it.t + '</span><small>' + (it.s || '') + '</small></div>'
+  ).join('');
+  const sel = list.querySelector('.gItem.sel');
+  if (sel) sel.scrollIntoView({ block: 'nearest' });
+}
+function gMenuToggle(force) {
+  const el = $('gMenu'), open = force == null ? !el.classList.contains('on') : !!force;
+  if (open) { gStack = []; gIdx = 0; gObjPick = false; sheet(); closeSearch(); if (calOn) calToggle(false); el.classList.add('on'); gMenuRender(); }
+  else { el.classList.remove('on'); }
+  gUpdateCross();
+}
+function gMenuClose() { $('gMenu').classList.remove('on'); gStack = []; gUpdateCross(); }
+function gMenuActivate() {
+  const it = gCurMenu().items[gIdx]; if (!it) return;
+  if (it.sub) { gStack.push({ id: it.sub, title: it.t, prevIdx: gIdx }); gIdx = 0; gMenuRender(); }
+  else if (it.fn) it.fn();
+}
+function gPanDir(sx, sy) {
+  locLock = false;
+  const step = gAimActive() ? 36 : 95;
+  const ca = Math.cos(-mapAng), sa = Math.sin(-mapAng);
+  map.panBy([sx * step * ca - sy * step * sa, sx * step * sa + sy * step * ca], { animate: true, duration: 0.15 });
+  gUpdateCross(); gTickHud();
+}
+async function gPickCenter() {
+  const p = map.getCenter();
+  if (gObjPick) {
+    gObjPick = false;
+    calAlignTo(p);
+    gUpdateCross(); gTickHud();
+    return;
+  }
+  if (pickCb) { const f = pickCb; pickCb = null; info.innerHTML = ''; f(p); gUpdateCross(); gTickHud(); return; }
+  if (mode === 'measure') measureAdd(p);
+  else if (mode === 'bearing') await bearingTo(p);
+  else if (mode === 'elev') await elevAt(p);
+  else if (mode === 'route') await routeAdd(p);
+}
+function gKey(k) {
+  unlockTick();
+  const menuOpen = $('gMenu').classList.contains('on');
+  const shItems = gSheetItems();
+  const shOpen = $('sheet').style.display === 'block' || $('sb').style.display === 'block' || shItems.length > 0;
+  if (k === 'sos') { gBeep(true); gMenuClose(); gObjPick = false; if (calOn) calToggle(false); sosOpen(); return; }
+  if (k === 'menu') { gBeep(true); gMenuToggle(); return; }
+  if (k === 'zin') { gBeep(false); map.zoomIn(1); return; }
+  if (k === 'zout') { gBeep(false); map.zoomOut(1); return; }
+  if (k === 'back') {
+    gBeep(false);
+    if (menuOpen) {
+      if (gStack.length) { const p = gStack.pop(); gIdx = p.prevIdx || 0; gMenuRender(); }
+      else gMenuClose();
+      return;
+    }
+    if (gObjPick) { gObjPick = false; $('calHint').textContent = CAL_HINT; gUpdateCross(); gTickHud(); return; }
+    if (calOn) { calToggle(false); gUpdateCross(); return; }
+    if ($('sb').style.display === 'block') { closeSearch(); gUpdateCross(); return; }
+    if ($('sheet').style.display === 'block') { sheet(); return; }
+    if (pickCb) { pickCb = null; info.innerHTML = ''; gUpdateCross(); gTickHud(); return; }
+    if (mode) { setMode(mode); gUpdateCross(); gTickHud(); return; }
+    if (info.textContent.trim()) { info.innerHTML = ''; prof.style.display = 'none'; gSheetHighlight(0); return; }
+    if (!locLock && me) { $('bLoc').click(); gUpdateCross(); gTickHud(); return; }
+    return;
+  }
+  if (menuOpen) {
+    const n = gCurMenu().items.length;
+    if (k === 'up') { gIdx = (gIdx - 1 + n) % n; gBeep(false); gMenuRender(); }
+    else if (k === 'down') { gIdx = (gIdx + 1) % n; gBeep(false); gMenuRender(); }
+    else if (k === 'ok' || k === 'right') { gBeep(true); gMenuActivate(); }
+    else if (k === 'left') { gKey('back'); }
+    return;
+  }
+  if (shOpen) {
+    if (k === 'up' || k === 'left') { gBeep(false); gSheetHighlight(-1); }
+    else if (k === 'down' || k === 'right') { gBeep(false); gSheetHighlight(1); }
+    else if (k === 'ok') {
+      if (shItems[gSheetIdx]) { gBeep(true); shItems[gSheetIdx].click(); }
+    }
+    return;
+  }
+  if (calOn && !gObjPick) {
+    if (k === 'left' || k === 'right') {
+      const nv = Math.max(-180, Math.min(180, Math.round(hdgOff) + (k === 'right' ? 1 : -1)));
+      dragHoldUntil = Date.now() + 1200; calTarget = null; gBeep(nv % 5 === 0);
+      setHdgOff(nv, false, false);
+      return;
+    }
+    if (k === 'ok') { gBeep(true); calToggle(false); gUpdateCross(); return; }
+    return;
+  }
+  if (k === 'up') { gBeep(false); gPanDir(0, -1); }
+  else if (k === 'down') { gBeep(false); gPanDir(0, 1); }
+  else if (k === 'left') { gBeep(false); gPanDir(-1, 0); }
+  else if (k === 'right') { gBeep(false); gPanDir(1, 0); }
+  else if (k === 'ok') {
+    gBeep(true);
+    if (gAimActive()) gPickCenter();
+    else { $('bLoc').click(); gUpdateCross(); gTickHud(); }
+  }
+}
+
+/* Hold-to-repeat on D-pad/Zoom + 1s long-press safety on SOS */
+(() => {
+  let repT = 0, repI = 0, sosT = 0, sosFired = false;
+  const stopRep = () => { clearTimeout(repT); clearInterval(repI); repT = 0; repI = 0; };
+  document.querySelectorAll('#gDeck [data-k]').forEach(btn => {
+    const k = btn.dataset.k, canRep = btn.dataset.rep === '1';
+    if (k === 'sos') {
+      const cancelSos = () => {
+        clearTimeout(sosT); sosT = 0; btn.classList.remove('hold');
+        if (!sosFired) { gSosHintUntil = Date.now() + 2500; gTickHud(); }
+      };
+      btn.addEventListener('pointerdown', e => {
+        e.preventDefault(); unlockTick(); sosFired = false; btn.classList.add('hold'); gBeep(false);
+        sosT = setTimeout(() => { sosFired = true; btn.classList.remove('hold'); gKey('sos'); }, 950);
+      });
+      ['pointerup', 'pointerleave', 'pointercancel'].forEach(ev => btn.addEventListener(ev, cancelSos));
+      return;
+    }
+    btn.addEventListener('pointerdown', e => {
+      e.preventDefault(); stopRep(); gKey(k);
+      if (canRep) repT = setTimeout(() => { repI = setInterval(() => gKey(k), 120); }, 300);
+    });
+    ['pointerup', 'pointerleave', 'pointercancel'].forEach(ev => btn.addEventListener(ev, stopRep));
+  });
+})();
+
+addEventListener('keydown', e => {
+  if (['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName)) return;
+  const mapKey = { ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 'right', Enter: 'ok', Escape: 'back', '+': 'zin', '=': 'zin', '-': 'zout', m: 'menu', M: 'menu' };
+  if (mapKey[e.key]) { e.preventDefault(); gKey(mapKey[e.key]); }
+});
+map.on('move', () => { if (!locLock || gAimActive()) gTickHud(); });
+function gTickHud() {
+  const now = new Date();
+  $('gClk').textContent = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
+  $('gAlt').textContent = '▲ ' + (meAlt != null ? Math.round(meAlt) + ' m' : '— m');
+  $('gHdgTop').textContent = gotOri || gpsMode ? brg(hdg) : '—°';
+  const bars = me ? (meAcc <= 8 ? 4 : meAcc <= 18 ? 3 : meAcc <= 40 ? 2 : 1) : 0;
+  $('gSig').querySelectorAll('i').forEach((el, i) => el.classList.toggle('on', i < bars));
+  const st = $('gStatus'), tag = $('gStatTag'), txt = $('gStatTxt');
+  if (Date.now() < gSosHintUntil) {
+    st.classList.add('rec'); tag.textContent = 'SOS ZAŠTITA';
+    txt.textContent = 'Drži SOS 1 sekundu za aktivaciju';
+  } else if (gAimActive()) {
+    const c = map.getCenter();
+    st.classList.remove('rec'); tag.textContent = gObjPick ? 'NIŠAN OBJEKTA' : 'KRSTIĆ';
+    txt.textContent = (me ? fmtD(dist(me, c)) + ' · ' + brg(bearing(me, c)) : c.lat.toFixed(4) + ', ' + c.lng.toFixed(4)) + ' · OK';
+  } else if (!locLock) {
+    const c = map.getCenter();
+    st.classList.remove('rec'); tag.textContent = 'KRSTIĆ';
+    txt.textContent = (me ? fmtD(dist(me, c)) + ' · ' + brg(bearing(me, c)) : c.lat.toFixed(4) + ', ' + c.lng.toFixed(4)) + ' · OK lokacija';
+  } else if (rec) {
+    st.classList.add('rec'); tag.textContent = rec.paused ? 'PAUZA' : 'SNIMA';
+    txt.textContent = fmtD(stats(rec.pts).d) + ' · ' + fmtT(Date.now() - rec.t0);
+  } else if (navT) {
+    st.classList.remove('rec'); tag.textContent = 'RUTA';
+    txt.textContent = ($('navD').textContent || '—') + ' · ' + (navT.name || 'Cilj');
+  } else {
+    st.classList.remove('rec'); tag.textContent = mapRot ? 'SMJER GORE' : 'SJEVER GORE';
+    txt.textContent = me ? 'GPS ±' + Math.round(meAcc) + ' m · MENU alati' : 'Tražim GPS · MENU alati';
+  }
+  gUpdateCross();
+}
+setInterval(gTickHud, 1000); gTickHud();
+if (navigator.getBattery) navigator.getBattery().then(b => {
+  const u = () => { $('gBat').textContent = Math.round(b.level * 100) + '%'; };
+  u(); b.addEventListener('levelchange', u);
+}).catch(() => {});
+setTimeout(() => map.invalidateSize(), 150);
 </script>
+
 </body>
 </html>
