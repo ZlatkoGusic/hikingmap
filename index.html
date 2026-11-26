@@ -1134,10 +1134,10 @@ svg.leaflet-image-layer.leaflet-interactive path {
   #gNumKbd i.kSel { background: #e8ece9 !important; color: #111314 !important; border-color: #fff !important; }
 
   /* True Geographic Sun / Shadow Marker on Map during Calibration */
-  .sunPin { display: inline-flex; align-items: center; gap: 4px; padding: 3px 7px; background: #141617; color: #ffd166; border: 1.5px solid #f59e0b; font: 700 11px/1 ui-monospace, Menlo, monospace; white-space: nowrap; box-shadow: 0 2px 10px rgba(0,0,0,.6); transform: rotate(var(--cr, 0deg)); transition: transform var(--crt, 0s); }
-  .sunPin.sh { color: #dce4e8; border-color: #94a3b8; }
-  .sunPin.mn { color: #e2e8f0; border-color: #cbd5e1; }
-  .sunPin.pl { color: #d8f3dc; border-color: #7fb069; }
+  .sunPin { display: inline-flex; align-items: center; gap: 4px; padding: 5px 9px; background: #101214; color: #ffb703; border: 2px solid #ff9f1c; font: 800 12px/1 ui-monospace, Menlo, monospace; white-space: nowrap; box-shadow: 0 3px 12px rgba(0,0,0,.75); transform: rotate(var(--cr, 0deg)); transition: transform var(--crt, 0s); }
+  .sunPin.sh { color: #e2e8f0; border-color: #94a3b8; }
+  .sunPin.mn { color: #7ee8ff; border-color: #00d4ff; }
+  .sunPin.pl { color: #86efac; border-color: #4ade80; }
 </style>
 
 
@@ -1960,12 +1960,15 @@ function drawSunRay(ref, az, kind) {
   const pFar = map.unproject(p0.add([dx * 900, dy * 900]), z);
   const pBadge = map.unproject(p0.add([dx * 130, dy * 130]), z);
   const cfg = {
-    sun: { col: '#f59e0b', dash: null, cls: '', lbl: '☀ SUNCE ' + Math.round(az) + '°' },
-    shadow: { col: '#94a3b8', dash: '7 6', cls: ' sh', lbl: '◐ SJENA ' + Math.round(az) + '°' },
-    moon: { col: '#cbd5e1', dash: '5 5', cls: ' mn', lbl: '☾ MJESEC ' + Math.round(az) + '°' },
-    polaris: { col: '#7fb069', dash: '4 4', cls: ' pl', lbl: '★ SJEVERNJAČA 0°' }
-  }[modeK] || { col: '#f59e0b', dash: null, cls: '', lbl: Math.round(az) + '°' };
-  calLine = L.polyline([ref, pFar], { color: cfg.col, weight: 3.5, dashArray: cfg.dash, opacity: .95 }).addTo(map);
+    sun: { col: '#ff9f1c', dash: null, cls: '', lbl: '☀ SUNCE ' + Math.round(az) + '°' },
+    shadow: { col: '#cbd5e1', dash: '8 6', cls: ' sh', lbl: '◐ SJENA ' + Math.round(az) + '°' },
+    moon: { col: '#00d4ff', dash: null, cls: ' mn', lbl: '☾ MJESEC ' + Math.round(az) + '°' },
+    polaris: { col: '#4ade80', dash: null, cls: ' pl', lbl: '★ SJEVERNJAČA 0°' }
+  }[modeK] || { col: '#ff9f1c', dash: null, cls: '', lbl: Math.round(az) + '°' };
+  calLine = L.layerGroup([
+    L.polyline([ref, pFar], { color: '#101214', weight: 8.5, dashArray: cfg.dash, opacity: .9 }),
+    L.polyline([ref, pFar], { color: cfg.col, weight: 4.5, dashArray: cfg.dash, opacity: 1 })
+  ]).addTo(map);
   calPin = L.marker(pBadge, { interactive: false, icon: L.divIcon({ className: '', iconSize: [0, 0], html: '<div class="sunPin' + cfg.cls + '">' + cfg.lbl + '</div>' }) }).addTo(map);
 }
 function calMoon() {
@@ -1975,9 +1978,8 @@ function calMoon() {
   const az = m.az; calTarget = az;
   map.panTo(ref, { animate: false });
   drawSunRay(ref, az, 'moon');
-  const hasOri = gotOri && !gpsMode && Date.now() - lastOri <= 2500;
-  if (hasOri) { const aim = rawAim(); if (aimSd == null || aimSd <= 10) setHdgOff(az - aim - declTerm(), true); }
-  $('calHint').textContent = 'Tačka Mjeseca (' + Math.round(az) + '°, visina ' + Math.round(m.alt) + '°) nacrtana na mapi. Usmjeri vrh telefona prema Mjesecu, poklopi liniju (◄► po 1°) i pritisni OK.';
+  updCalMeta();
+  $('calHint').textContent = 'Mjesec (' + Math.round(az) + '°, visina ' + Math.round(m.alt) + '°): usmjeri vrh telefona prema Mjesecu, strelicama ◄► poklopi liniju sa nišanom pa pritisni OK.';
 }
 function calPolaris() {
   const ref = me || map.getCenter();
@@ -1985,9 +1987,8 @@ function calPolaris() {
   const az = 0; calTarget = 0;
   map.panTo(ref, { animate: false });
   drawSunRay(ref, 0, 'polaris');
-  const hasOri = gotOri && !gpsMode && Date.now() - lastOri <= 2500;
-  if (hasOri) { const aim = rawAim(); if (aimSd == null || aimSd <= 10) setHdgOff(0 - aim - declTerm(), true); }
-  $('calHint').textContent = 'Pravac Sjevernjače (0° pravi sjever) nacrtan na mapi. Usmjeri vrh telefona prema Sjevernjači, poklopi zelenu liniju sa nišanom (◄► po 1°) i pritisni OK.';
+  updCalMeta();
+  $('calHint').textContent = 'Sjevernjača (0° sjever): usmjeri vrh telefona prema Sjevernjači, strelicama ◄► poklopi zelenu liniju sa nišanom pa pritisni OK.';
 }
 let gSkyList = [], gSkyIdx = 0;
 function gSkyOpts() {
@@ -2021,13 +2022,8 @@ function calSun(shadow) {
   const az = (s.az + (shadow ? 180 : 0)) % 360; calTarget = az;
   map.panTo(ref, { animate: false });
   drawSunRay(ref, az, shadow);
-  const hasOri = gotOri && !gpsMode && Date.now() - lastOri <= 2500;
-  if (hasOri && !(shadow && Math.abs(lastBeta) > 55)) {
-    const aim = rawAim();
-    if (aimSd == null || aimSd <= 10) setHdgOff(az - aim - declTerm(), true);
-  }
-  $('calHint').textContent = (shadow ? 'Linija sjene (' + Math.round(az) + '°) nacrtana na mapi. ' : 'Tačka Sunca (' + Math.round(az) + '°) nacrtana na mapi. ') +
-    'Usmjeri vrh telefona ' + (shadow ? 'duž sjene' : 'prema Suncu') + ', poklopi liniju sa nišanom (◄► po 1°) i pritisni OK.';
+  updCalMeta();
+  $('calHint').textContent = 'Sunce (' + Math.round(az) + '°, visina ' + Math.round(s.alt) + '°): usmjeri vrh telefona prema Suncu, strelicama ◄► poklopi zlatnu liniju sa nišanom pa pritisni OK.';
 }
 function calToggle(on) {
   calOn = on == null ? !calOn : !!on;
