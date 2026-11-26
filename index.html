@@ -1106,7 +1106,10 @@ svg.leaflet-image-layer.leaflet-interactive path {
   #gScreen #sr .item { display: flex; justify-content: space-between; align-items: center; gap: 6px; padding: 8px 8px !important; border-left: 3px solid transparent; }
   #gScreen #sr .item.gFocus { background: #e8ece9 !important; color: #111314 !important; border-left-color: #7fb069 !important; outline: none !important; }
   #gScreen #sr .item.gFocus b, #gScreen #sr .item.gFocus small, #gScreen #sr .item.gFocus span { color: #111314 !important; }
+
+  #gCross.snap { --cc: #7fb069; }
 </style>
+
 
 
 
@@ -1409,7 +1412,7 @@ async function elevAt(p) { tools.clearLayers(); dot(p); info.innerHTML = '<b>' +
 let sr = [];
 function toggleSearch() { if ($('sb').style.display === 'block') closeSearch(); else { if (calOn) calToggle(false); sheet(); $('sb').style.display = 'block'; $('q').focus(); } }
 function closeSearch() { runId++; ctrls.forEach(c => c.abort()); clearTimeout(tPh); $('sb').style.display = 'none'; $('sb').classList.remove('g-open'); $('sr').innerHTML = ''; $('q').blur(); }
-function goTo(ll) { closeSearch(); map.setView(ll, Math.max(map.getZoom(), 14));
+function goTo(ll) { closeSearch(); locLock = false; gViewAtCross(ll, Math.max(map.getZoom(), 14));
   const f = L.circleMarker(ll, { radius: 16, color: '#d9702a', weight: 3, fill: false }).addTo(map); setTimeout(() => map.removeLayer(f), 3000); }
 /* --- transliteracija, normalizacija, kategorije --- */
 const CYR = {}; 'АБВГДЂЕЖЗИЈКЛЉМНЊОПРСТЋУФХЦЧЏШ'.split('').forEach((c, i) => { const l = ['A','B','V','G','D','Đ','E','Ž','Z','I','J','K','L','Lj','M','N','Nj','O','P','R','S','T','Ć','U','F','H','C','Č','Dž','Š'][i]; CYR[c] = l; CYR[c.toLowerCase()] = l.toLowerCase(); });
@@ -2081,10 +2084,15 @@ function markInfo(id) { const m = MK.find(x => x.id === id); if (!m) return; con
     '<br>' + (me ? 'Od tebe' : 'Od centra mape') + ': ' + fmtD(dist(r, m)) + ' · ' + brg(bearing(r, m)) +
     '<br><button onclick="navMark(\'' + id + '\')">Vrati me do</button><button class="gray" onclick="markEdit(\'' + id + '\')">Uredi</button><button class="red" onclick="markDel(\'' + id + '\')">Obriši</button>'; }
 const markEdit = id => markForm({ ...MK.find(x => x.id === id) });
-async function markDel(id) { if (!confirm('Obrisati marker?')) return; MK = MK.filter(x => x.id !== id); await saveMarks(); drawMarks(); info.innerHTML = ''; markListRefresh(); }
+function markDel(id) {
+  const m = MK.find(x => x.id === id); if (!m) return;
+  sheet('<b>Obrisati marker?</b><div class="kv">Želite li obrisati marker <b>„' + esc(m.name) + '“</b>?</div>' +
+    '<div class="row"><button class="red" onclick="markDelYes(\'' + id + '\')">Da, obriši</button><button class="gray" onclick="sheet()">Ne, odustani</button></div>');
+}
+async function markDelYes(id) { MK = MK.filter(x => x.id !== id); await saveMarks(); drawMarks(); gSnapMk = null; sheet(); info.innerHTML = ''; gUpdateCross(); gTickHud(); }
 function markList() { const r = refPt(), a = MK.map(m => ({ m, d: dist(r, m) })).sort((x, y) => x.d - y.d);
   sheet('<b>Markeri (' + MK.length + ')</b>' + (a.length ? a.map(({ m, d }) => '<div class="item"><span><b>' + mkIc(m.cat) + esc(m.name) + '</b><br><small>' + catOf(m.cat).n + ' · ' + fmtD(d) + (m.alt != null ? ' · ' + Math.round(m.alt) + ' m' : '') + '</small></span><span>' +
-    '<button onclick="sheet();map.setView([' + m.lat + ',' + m.lng + '],Math.max(map.getZoom(),15));markInfo(\'' + m.id + '\')">Idi</button> <button class="gray" onclick="navMark(\'' + m.id + '\')">Vrati me</button></span></div>').join('') +
+    '<button onclick="gReturnMenu=null;sheet();locLock=false;gViewAtCross(L.latLng(' + m.lat + ',' + m.lng + '),Math.max(map.getZoom(),15));markInfo(\'' + m.id + '\')">Idi</button> <button class="gray" onclick="navMark(\'' + m.id + '\')">Vrati me</button></span></div>').join('') +
     '<div class="row"><button class="gray" onclick="exportMarks()">Izvezi GPX</button></div>' : '<p>Nema markera. Koristi „Označi ovdje“ ili „Marker na mapi“.</p>')); }
 const markListRefresh = () => { if ($('sheet').style.display === 'block' && $('sheet').textContent.includes('Markeri (')) markList(); };
 function exportMarks() { const x = '<?xml version="1.0" encoding="UTF-8"?><gpx version="1.1" creator="HikeMap" xmlns="http://www.topografix.com/GPX/1/1">' +
@@ -2284,7 +2292,7 @@ startWatch();
 /* === PURE BUTTON-ONLY HANDHELD CONTROLLER === */
 ['dragging','touchZoom','doubleClickZoom','scrollWheelZoom','boxZoom','tapHold'].forEach(h => map[h] && map[h].disable());
 $('q').setAttribute('readonly', 'readonly'); $('q').setAttribute('inputmode', 'none');
-let gStack = [], gIdx = 0, gLayIdx = 0, gSheetIdx = 0, gObjPick = false, gDispMode = 0, gSosHintUntil = 0, gNavExitUntil = 0;
+let gStack = [], gIdx = 0, gLayIdx = 0, gSheetIdx = 0, gObjPick = false, gDispMode = 0, gSosHintUntil = 0, gNavExitUntil = 0, gSnapMk = null, gSnapCool = 0, gReturnMenu = null;
 let gKbdOn = true, gKr = 0, gKc = 0;
 const gKbdRows = [
   ['A','B','C','Č','Ć','D','E'],
@@ -2361,11 +2369,35 @@ function gHaptic(mode = 'tap') {
 }
 function gBeep(strong = false) { gHaptic(strong ? 'ok' : 'tap'); calTick(strong); }
 function gAimActive() { return !!(pickCb || mode || gObjPick); }
+function gViewAtCross(ll, z, anim = false) {
+  const tz = z != null ? z : map.getZoom(), sz = map.getSize(), dys = (0.5 - rotOrigY) * sz.y;
+  const ox = dys * Math.sin(mapAng), oy = (rotOrigY - 0.5) * sz.y + dys * Math.cos(mapAng);
+  const p = map.project(ll, tz);
+  map.setView(map.unproject(L.point(p.x - ox, p.y - oy), tz), tz, { animate: anim });
+}
+function gCheckSnap() {
+  if (locLock || gAimActive() || calOn || !MK.length || Date.now() < gSnapCool) { gSnapMk = null; return; }
+  const c = gCrossLatLng(), cp = map.latLngToContainerPoint(c);
+  let best = null, bestD = 26;
+  for (const m of MK) {
+    const mp = map.latLngToContainerPoint(L.latLng(m.lat, m.lng));
+    const d = cp.distanceTo(mp);
+    if (d < bestD) { bestD = d; best = m; }
+  }
+  if (best && best !== gSnapMk) {
+    gSnapMk = best;
+    gViewAtCross(L.latLng(best.lat, best.lng), map.getZoom(), true);
+    gHaptic('tap');
+  } else if (!best) {
+    gSnapMk = null;
+  }
+}
 function gUpdateCross() {
   const cr = $('gCross'), menuOpen = $('gMenu').classList.contains('on'), shOpen = $('sheet').style.display === 'block';
   const show = !menuOpen && !shOpen && (!calOn || gObjPick) && (gAimActive() || !locLock);
   cr.classList.toggle('on', show);
   cr.classList.toggle('aim', gAimActive());
+  cr.classList.toggle('snap', !gAimActive() && !!gSnapMk);
 }
 function gSheetItems() {
   if ($('sb').classList.contains('g-open') || $('sb').style.display === 'flex' || $('sb').style.display === 'block') return gSrItems();
@@ -2441,15 +2473,15 @@ function gSubItems(id) {
   ];
   if (id === 'routes') return [
     { t: rec ? 'Zaustavi snimanje' : 'Snimaj rutu', s: rec ? fmtD(stats(rec.pts).d) : 'Nova ruta', fn: () => { gMenuClose(); $('bRec').click(); } },
-    { t: 'Spremljene rute', s: 'Prati / GPX', fn: () => { gMenuClose(); tracksOpen(); } },
+    { t: 'Spremljene rute', s: 'Prati / GPX', fn: () => { gMenuClose(true); tracksOpen(); } },
     { t: 'Uvezi GPX fajl', s: 'Iz memorije', fn: () => { gMenuClose(); $('gpxIn').click(); } },
     { t: 'Dionica A→B po stazi', s: 'Krstić + OK', fn: () => { gMenuClose(); locLock = false; setMode('route'); info.innerHTML = ''; prof.style.display = 'none'; gUpdateCross(); gTickHud(); } },
-    { t: 'Vrati me do…', s: 'Navigacija', fn: () => { gMenuClose(); navOpen(); } }
+    { t: 'Vrati me do…', s: 'Navigacija', fn: () => { gMenuClose(true); navOpen(); } }
   ];
   if (id === 'marks') return [
-    { t: 'Označi ovdje', s: 'Trenutna pozicija', fn: () => { gMenuClose(); markHere(); } },
+    { t: 'Označi ovdje', s: 'Trenutna pozicija', fn: () => { gMenuClose(true); markHere(); } },
     { t: 'Marker na mapi (krstić)', s: 'Nanišani + OK', fn: () => { gMenuClose(); locLock = false; markPick(); info.innerHTML = ''; prof.style.display = 'none'; gUpdateCross(); gTickHud(); } },
-    { t: 'Lista markera', s: MK.length + ' spremljenih', fn: () => { gMenuClose(); markList(); } }
+    { t: 'Lista markera', s: MK.length + ' spremljenih', fn: () => { gMenuClose(true); markList(); } }
   ];
   if (id === 'tools') return [
     { t: 'Sloj karte: ' + gLayers[gLayIdx].name, s: 'OK za promjenu', fn: () => {
@@ -2465,8 +2497,8 @@ function gSubItems(id) {
         gMenuRender();
       } },
     { t: gIsFs() ? 'Izađi iz punog ekrana' : 'Puni ekran', s: gCanFs() ? 'Sakrij traku browsera' : 'iOS: Dodaj na početni', fn: () => { gToggleFs(); gMenuRender(); } },
-    { t: 'Zalazak sunca', s: 'Mrak / sumrak', fn: () => { gMenuClose(); sunOpen(0); } },
-    { t: 'Offline mape', s: 'Preuzmi zonu', fn: () => { gMenuClose(); offOpen(); } },
+    { t: 'Zalazak sunca', s: 'Mrak / sumrak', fn: () => { gMenuClose(true); sunOpen(0); } },
+    { t: 'Offline mape', s: 'Preuzmi zonu', fn: () => { gMenuClose(true); offOpen(); } },
     { t: 'Obriši crteže', s: 'Čista karta', fn: () => { gMenuClose(); $('bClear').click(); gUpdateCross(); gTickHud(); } }
   ];
   return gMainItems();
@@ -2497,18 +2529,25 @@ function gMenuToggle(force) {
   else { el.classList.remove('on'); }
   gUpdateCross();
 }
-function gMenuClose() { $('gMenu').classList.remove('on'); gStack = []; gUpdateCross(); }
+function gMenuClose(keepReturn = false) {
+  gReturnMenu = keepReturn && gStack.length ? { stack: gStack.map(x => ({ ...x })), idx: gIdx } : null;
+  $('gMenu').classList.remove('on'); gStack = []; gUpdateCross();
+}
 function gMenuActivate() {
   const it = gCurMenu().items[gIdx]; if (!it) return;
   if (it.sub) { gStack.push({ id: it.sub, title: it.t, prevIdx: gIdx }); gIdx = 0; gMenuRender(); }
   else if (it.fn) it.fn();
 }
-function gPanDir(sx, sy) {
+function gPanDir(sx, sy, fast = false) {
   locLock = false;
-  const step = gAimActive() ? 36 : 95;
+  if (gSnapMk) { gSnapMk = null; gSnapCool = Date.now() + 450; }
+  const z = map.getZoom();
+  let step = gAimActive() ? (z >= 16 ? 14 : z >= 13 ? 22 : 32) : (z >= 16 ? 20 : z >= 13 ? 32 : 52);
+  if (fast) step = Math.round(step * 2.6);
   const ca = Math.cos(-mapAng), sa = Math.sin(-mapAng);
-  map.panBy([sx * step * ca - sy * step * sa, sx * step * sa + sy * step * ca], { animate: true, duration: 0.15 });
-  gUpdateCross(); gTickHud();
+  map.panBy([sx * step * ca - sy * step * sa, sx * step * sa + sy * step * ca], { animate: !fast, duration: 0.12 });
+  if (!fast) setTimeout(() => { gCheckSnap(); gUpdateCross(); gTickHud(); }, 150);
+  else { gUpdateCross(); gTickHud(); }
 }
 function gCrossLatLng() {
   const sz = map.getSize(), px = sz.x / 2, py = sz.y * rotOrigY, dys = (0.5 - rotOrigY) * sz.y;
@@ -2528,7 +2567,7 @@ async function gPickCenter() {
   else if (mode === 'elev') await elevAt(p);
   else if (mode === 'route') await routeAdd(p);
 }
-function gKey(k) {
+function gKey(k, fast = false) {
   unlockTick();
   const menuOpen = $('gMenu').classList.contains('on');
   const shItems = gSheetItems();
@@ -2551,7 +2590,14 @@ function gKey(k) {
       if (!gKbdOn) { gKbdOn = true; document.querySelectorAll('.gFocus').forEach(el => el.classList.remove('gFocus')); gKbdRender(); return; }
       gCloseSearch(); return;
     }
-    if ($('sheet').style.display === 'block') { sheet(); return; }
+    if ($('sheet').style.display === 'block') {
+      sheet();
+      if (gReturnMenu) {
+        gStack = gReturnMenu.stack; gIdx = gReturnMenu.idx; gReturnMenu = null;
+        $('gMenu').classList.add('on'); gMenuRender(); gUpdateCross();
+      }
+      return;
+    }
     if (info.textContent.trim()) { info.innerHTML = ''; prof.style.display = 'none'; gSheetHighlight(0); gTickHud(); return; }
     if (pickCb) { pickCb = null; gUpdateCross(); gTickHud(); return; }
     if (mode) { mode = null; Object.values(btns).forEach(b => b.classList.remove('active')); $('radRow').style.display = 'none'; gUpdateCross(); gTickHud(); return; }
@@ -2634,13 +2680,14 @@ function gKey(k) {
     if (k === 'ok') { gBeep(true); calToggle(false); gUpdateCross(); return; }
     return;
   }
-  if (k === 'up') { gBeep(false); gPanDir(0, -1); }
-  else if (k === 'down') { gBeep(false); gPanDir(0, 1); }
-  else if (k === 'left') { gBeep(false); gPanDir(-1, 0); }
-  else if (k === 'right') { gBeep(false); gPanDir(1, 0); }
+  if (k === 'up') { gBeep(false); gPanDir(0, -1, fast); }
+  else if (k === 'down') { gBeep(false); gPanDir(0, 1, fast); }
+  else if (k === 'left') { gBeep(false); gPanDir(-1, 0, fast); }
+  else if (k === 'right') { gBeep(false); gPanDir(1, 0, fast); }
   else if (k === 'ok') {
     gBeep(true);
     if (gAimActive()) gPickCenter();
+    else if (gSnapMk) { markInfo(gSnapMk.id); }
     else { $('bLoc').click(); gUpdateCross(); gTickHud(); }
   }
 }
@@ -2661,7 +2708,7 @@ function gKey(k) {
     }
     const startHold = () => {
       stopRep(); gKey(k);
-      repT = setTimeout(() => { repI = setInterval(() => gKey(k), 130); }, 320);
+      repT = setTimeout(() => { repI = setInterval(() => gKey(k, true), 115); }, 300);
     };
     btn.addEventListener('touchstart', e => {
       lastTouch = Date.now();
@@ -2703,9 +2750,14 @@ function gTickHud() {
     st.classList.remove('rec'); tag.textContent = tName;
     txt.textContent = (me ? fmtD(dist(me, c)) + ' · ' + brg(bearing(me, c)) : c.lat.toFixed(4) + ', ' + c.lng.toFixed(4)) + ' · OK / NAZAD';
   } else if (!locLock) {
-    const c = gCrossLatLng();
-    st.classList.remove('rec'); tag.textContent = 'KRSTIĆ';
-    txt.textContent = (me ? fmtD(dist(me, c)) + ' · ' + brg(bearing(me, c)) : c.lat.toFixed(4) + ', ' + c.lng.toFixed(4)) + ' · OK lokacija';
+    if (gSnapMk) {
+      st.classList.remove('rec'); tag.textContent = 'MARKER';
+      txt.textContent = gSnapMk.name + ' · OK otvori / obriši';
+    } else {
+      const c = gCrossLatLng();
+      st.classList.remove('rec'); tag.textContent = 'KRSTIĆ';
+      txt.textContent = (me ? fmtD(dist(me, c)) + ' · ' + brg(bearing(me, c)) : c.lat.toFixed(4) + ', ' + c.lng.toFixed(4)) + ' · OK lokacija';
+    }
   } else if (rec) {
     st.classList.add('rec'); tag.textContent = rec.paused ? 'PAUZA' : 'SNIMA';
     txt.textContent = fmtD(stats(rec.pts).d) + ' · ' + fmtT(Date.now() - rec.t0);
