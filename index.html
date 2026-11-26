@@ -1940,12 +1940,21 @@ function sunAzPos(lat, lng, dt) {
 }
 function moonAzPos(lat, lng, dt) {
   const d = dt.getTime() / 86400000 - 10957.5;
-  const L = rad((218.316 + 13.176396 * d) % 360), M = rad((134.963 + 13.064993 * d) % 360), F = rad((93.272 + 13.229350 * d) % 360);
-  const Ms = rad((357.529 + 0.9856003 * d) % 360), D = rad((297.850 + 12.190749 * d) % 360);
-  const lon = L + rad(6.289 * Math.sin(M) + 1.274 * Math.sin(2 * D - M) + 0.658 * Math.sin(2 * D) - 0.186 * Math.sin(Ms));
-  const latE = rad(5.128 * Math.sin(F)), eps = rad(23.439 - 0.0000004 * d);
+  const L = rad((218.3164 + 13.1763965 * d) % 360), M = rad((134.9634 + 13.0649930 * d) % 360), F = rad((93.2721 + 13.2293502 * d) % 360);
+  const Ms = rad((357.5291 + 0.9856003 * d) % 360), D = rad((297.8502 + 12.1907491 * d) % 360);
+  const lon = L + rad(6.2888 * Math.sin(M) + 1.2740 * Math.sin(2 * D - M) + 0.6583 * Math.sin(2 * D) + 0.2136 * Math.sin(2 * M) - 0.1851 * Math.sin(Ms) - 0.1143 * Math.sin(2 * F));
+  const latE = rad(5.1281 * Math.sin(F) + 0.2806 * Math.sin(M + F) + 0.2777 * Math.sin(M - F) + 0.1732 * Math.sin(2 * D - F));
+  const eps = rad(23.4393 - 0.0000004 * d);
   const ra = Math.atan2(Math.sin(lon) * Math.cos(eps) - Math.tan(latE) * Math.sin(eps), Math.cos(lon));
-  const dec = Math.asin(Math.sin(latE) * Math.cos(eps) + Math.cos(latE) * Math.cos(eps) * Math.sin(lon));
+  const dec = Math.asin(Math.sin(latE) * Math.cos(eps) + Math.cos(latE) * Math.sin(eps) * Math.sin(lon));
+  const ha = rad((280.46061837 + 360.98564736629 * d) % 360) + rad(lng) - ra, phi = rad(lat);
+  const alt = deg(Math.asin(Math.sin(phi) * Math.sin(dec) + Math.cos(phi) * Math.cos(dec) * Math.cos(ha)));
+  const az = (deg(Math.atan2(-Math.sin(ha), Math.tan(dec) * Math.cos(phi) - Math.sin(phi) * Math.cos(ha))) + 360) % 360;
+  return { az, alt };
+}
+function polarisAzPos(lat, lng, dt) {
+  const d = dt.getTime() / 86400000 - 10957.5, yrs = d / 365.25;
+  const ra = rad(37.9546 + 0.140 * yrs), dec = rad(89.2641 + 0.0042 * yrs);
   const ha = rad((280.46061837 + 360.98564736629 * d) % 360) + rad(lng) - ra, phi = rad(lat);
   const alt = deg(Math.asin(Math.sin(phi) * Math.sin(dec) + Math.cos(phi) * Math.cos(dec) * Math.cos(ha)));
   const az = (deg(Math.atan2(-Math.sin(ha), Math.tan(dec) * Math.cos(phi) - Math.sin(phi) * Math.cos(ha))) + 360) % 360;
@@ -1984,11 +1993,11 @@ function calMoon() {
 function calPolaris() {
   const ref = me || map.getCenter();
   if (ref.lat < 5) { $('calHint').textContent = 'Sjevernjača nije vidljiva južno od ekvatora.'; return; }
-  const az = 0; calTarget = 0;
+  const p = polarisAzPos(ref.lat, ref.lng, new Date()), az = p.az; calTarget = az;
   map.panTo(ref, { animate: false });
-  drawSunRay(ref, 0, 'polaris');
+  drawSunRay(ref, az, 'polaris');
   updCalMeta();
-  $('calHint').textContent = 'Sjevernjača (0° sjever): usmjeri vrh telefona prema Sjevernjači, strelicama ◄► poklopi zelenu liniju sa nišanom pa pritisni OK.';
+  $('calHint').textContent = 'Sjevernjača (' + Math.round(az) % 360 + '°, visina ' + Math.round(p.alt) + '°): usmjeri vrh telefona prema Sjevernjači, strelicama ◄► poklopi zelenu liniju sa nišanom pa pritisni OK.';
 }
 let gSkyList = [], gSkyIdx = 0;
 function gSkyOpts() {
