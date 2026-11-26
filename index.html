@@ -1096,7 +1096,14 @@ svg.leaflet-image-layer.leaflet-interactive path {
   #gDeck { z-index: 2000 !important; touch-action: manipulation; }
   #gDeck button { -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
   #gDeck svg { pointer-events: none; }
+
+  /* Crisp search results selection & dimmed keypad when picking a place */
+  #gKbd.dim { opacity: .42; }
+  #gScreen #sr .item { display: flex; justify-content: space-between; align-items: center; gap: 6px; padding: 8px 8px !important; border-left: 3px solid transparent; }
+  #gScreen #sr .item.gFocus { background: #e8ece9 !important; color: #111314 !important; border-left-color: #7fb069 !important; outline: none !important; }
+  #gScreen #sr .item.gFocus b, #gScreen #sr .item.gFocus small, #gScreen #sr .item.gFocus span { color: #111314 !important; }
 </style>
+
 
 
 
@@ -1388,7 +1395,7 @@ $('radGo').onclick = () => { const r = parseFloat($('radIn').value); if (r > 0) 
 async function elevAt(p) { tools.clearLayers(); dot(p); info.innerHTML = '<b>' + fmtLL(p) + '</b><br><i>Računam visinu…</i>';
   const my = ++token, el = await safeElev([p]); if (my !== token) return;
   info.innerHTML = '<b>' + fmtLL(p) + '</b><br>' + (el ? 'Nadmorska visina: <b class="big">' + Math.round(el[0]) + ' m</b>' : 'Visina nedostupna (treba internet).') + (me ? '<br>Od tebe: ' + fmtD(dist(me, p)) + ' · ' + brg(bearing(me, p)) : '');
-  if (el) label(p, Math.round(el[0]) + ' m'); }
+  }
 
 /* ---------- Pretraga (najbliže prvo) ---------- */
 let sr = [];
@@ -1963,7 +1970,7 @@ function oriEvt(e) { let h = null;
 let oriOn = false;
 async function compassListen() {
   if (oriOn) return;
-  try { if (window.DeviceOrientationEvent && DeviceOrientationEvent.requestPermission && (await DeviceOrientationEvent.requestPermission()) !== 'granted') return; } catch (e) {}
+  try { if (window.DeviceOrientationEvent && DeviceOrientationEvent.requestPermission && (await DeviceOrientationEvent.requestPermission()) !== 'granted') return; } catch (e) { return; }
   oriOn = true; addEventListener('deviceorientationabsolute', oriEvt, true); addEventListener('deviceorientation', oriEvt, true); }
 async function compassTap() { await compassListen(); if (calOn) { calToggle(false); return; } setMapRot(!mapRot); }
 $('bOrient').onclick = () => { dr(false); setMapRot(!mapRot); };
@@ -2278,14 +2285,23 @@ const gKbdRows = [
   ['0','1','2','3','4','5','6'],
   ['7','8','9','␣','⌫','CLR','GO']
 ];
+function gSrItems() { return [...$('sr').querySelectorAll('.item')].filter(el => el.offsetParent !== null); }
+function gEnterSr() {
+  const res = gSrItems(); if (!res.length) return false;
+  gKbdOn = false; gSheetIdx = 0; gKbdRender(); gSheetHighlight(0); return true;
+}
 function gKbdRender() {
   const el = $('gKbd'); if (!el) return;
+  el.classList.toggle('dim', !gKbdOn);
+  const hasRes = gSrItems().length > 0;
   let out = '';
   for (let r = 0; r < gKbdRows.length; r++) {
     for (let c = 0; c < 7; c++) {
-      const ch = gKbdRows[r][c], isAct = ch.length > 1 || ch === '␣' || ch === '⌫';
+      let ch = gKbdRows[r][c];
+      const lbl = (ch === 'GO' && hasRes) ? '↓REZ' : ch;
+      const isAct = ch.length > 1 || ch === '␣' || ch === '⌫';
       const sel = gKbdOn && r === gKr && c === gKc;
-      out += '<i class="' + (isAct ? 'act ' : '') + (sel ? 'kSel' : '') + '">' + ch + '</i>';
+      out += '<i class="' + (isAct ? 'act ' : '') + (sel ? 'kSel' : '') + '">' + lbl + '</i>';
     }
   }
   el.innerHTML = out;
@@ -2309,12 +2325,10 @@ function gKbdPress() {
   else if (ch === 'CLR') { q.value = ''; $('sr').innerHTML = ''; return; }
   else if (ch === '␣') { q.value += ' '; }
   else if (ch === 'GO') {
+    if (gEnterSr()) return;
     clearTimeout(tPh);
     runSearch(q.value, true);
-    setTimeout(() => {
-      const res = gSheetItems();
-      if (res.length) { gKbdOn = false; gSheetIdx = 0; gKbdRender(); gSheetHighlight(0); }
-    }, 350);
+    setTimeout(() => gEnterSr(), 400);
     return;
   } else { q.value += ch; }
   clearTimeout(tPh);
@@ -2344,7 +2358,7 @@ function gUpdateCross() {
   cr.classList.toggle('aim', gAimActive());
 }
 function gSheetItems() {
-  if ($('sb').classList.contains('g-open') || $('sb').style.display === 'flex' || $('sb').style.display === 'block') return [...$('sr').querySelectorAll('div,button')].filter(el => el.offsetParent !== null);
+  if ($('sb').classList.contains('g-open') || $('sb').style.display === 'flex' || $('sb').style.display === 'block') return gSrItems();
   if ($('sheet').style.display === 'block') return [...$('sheet').querySelectorAll($('mkC') ? 'button:not(.icb)' : 'button')].filter(el => el.offsetParent !== null);
   if ($('ip').style.display === 'block') return [...$('info').querySelectorAll('button')].filter(el => el.offsetParent !== null);
   return [];
@@ -2371,6 +2385,12 @@ new MutationObserver(() => {
     gSheetIdx = 0; setTimeout(() => gSheetHighlight(0), 25);
   }
 }).observe(info, { childList: true, subtree: true });
+new MutationObserver(() => {
+  if ($('sb').classList.contains('g-open')) {
+    gKbdRender();
+    if (!gKbdOn) gSheetHighlight(0);
+  }
+}).observe($('sr'), { childList: true });
 
 function gMainItems() {
   const list = [];
@@ -2379,7 +2399,7 @@ function gMainItems() {
   list.push(
     { t: 'Moja lokacija', s: me ? fmtLL(me) : 'Traži GPS', fn: () => { gMenuClose(); $('bLoc').click(); gUpdateCross(); gTickHud(); } },
     { t: 'Traži mjesto', s: 'Tastatura / koordinate', fn: () => { gMenuClose(); gOpenSearch(); } },
-    { t: 'Mjeri udaljenost', s: 'Krstić + OK', fn: () => { gMenuClose(); locLock = false; setMode('measure'); info.textContent = 'Pomjeri krstić na tačke i pritiskaj OK.'; gUpdateCross(); gTickHud(); } },
+    { t: 'Mjerenje', s: 'Udaljenost / Azimut / Visina / A→B', sub: 'measure' },
     { t: 'Markeri', s: MK.length + ' tačaka', sub: 'marks' },
     { t: 'Rute i GPX', s: rec ? 'Snimanje aktivno' : 'Snimi / Uvezi', sub: 'routes' },
     { t: 'Kompas', s: (mapRot ? 'Po smjeru' : 'Po sjeveru') + (hdgOff ? ' · ' + fmtSign(hdgOff) : ''), sub: 'cal' },
@@ -2388,6 +2408,12 @@ function gMainItems() {
   return list;
 }
 function gSubItems(id) {
+  if (id === 'measure') return [
+    { t: 'Mjeri udaljenost', s: 'Krstić + OK', fn: () => { gMenuClose(); locLock = false; setMode('measure'); info.textContent = 'Pomjeri krstić na tačke i pritiskaj OK.'; gUpdateCross(); gTickHud(); } },
+    { t: 'Azimut', s: 'Smjer do cilja (krstić)', fn: () => { gMenuClose(); locLock = false; setMode('bearing'); info.textContent = 'Pomjeri krstić na cilj i pritisni OK.'; gUpdateCross(); gTickHud(); } },
+    { t: 'Nadmorska visina', s: 'Krstić + OK', fn: () => { gMenuClose(); locLock = false; setMode('elev'); info.textContent = 'Pomjeri krstić na tačku i pritisni OK.'; gUpdateCross(); gTickHud(); } },
+    { t: 'Dionica A→B po stazi', s: 'Krstić A pa B + OK', fn: () => { gMenuClose(); locLock = false; setMode('route'); info.textContent = 'Pomjeri krstić na A pa OK, zatim B pa OK.'; gUpdateCross(); gTickHud(); } }
+  ];
   if (id === 'cal') return [
     { t: 'Po smjeru' + (mapRot ? ' ✓' : ''), s: 'Rotira kartu', fn: () => { compassListen(); setMapRot(true); gMenuRender(); gTickHud(); } },
     { t: 'Po sjeveru' + (!mapRot ? ' ✓' : ''), s: 'Sjever fiksno gore', fn: () => { setMapRot(false); gMenuRender(); gTickHud(); } },
@@ -2429,8 +2455,6 @@ function gSubItems(id) {
         gMenuRender();
       } },
     { t: gIsFs() ? 'Izađi iz punog ekrana' : 'Puni ekran', s: gCanFs() ? 'Sakrij traku browsera' : 'iOS: Dodaj na početni', fn: () => { gToggleFs(); gMenuRender(); } },
-    { t: 'Bearing (krstić)', s: 'Nanišani + OK', fn: () => { gMenuClose(); locLock = false; setMode('bearing'); info.textContent = 'Pomjeri krstić na cilj i pritisni OK.'; gUpdateCross(); gTickHud(); } },
-    { t: 'Nadmorska visina (krstić)', s: 'Nanišani + OK', fn: () => { gMenuClose(); locLock = false; setMode('elev'); info.textContent = 'Pomjeri krstić na tačku i pritisni OK.'; gUpdateCross(); gTickHud(); } },
     { t: 'Zalazak sunca', s: 'Mrak / sumrak', fn: () => { gMenuClose(); sunOpen(0); } },
     { t: 'Offline mape', s: 'Preuzmi zonu', fn: () => { gMenuClose(); offOpen(); } },
     { t: 'Obriši crteže', s: 'Čista karta', fn: () => { gMenuClose(); $('bClear').click(); gUpdateCross(); gTickHud(); } }
@@ -2529,24 +2553,29 @@ function gKey(k) {
     return;
   }
   if (sbOpen) {
-    const res = [...$('sr').querySelectorAll('div,button')].filter(el => el.offsetParent !== null);
+    const res = gSrItems();
     if (gKbdOn) {
       if (k === 'left') { gKc = (gKc + 6) % 7; gBeep(false); gKbdRender(); }
       else if (k === 'right') { gKc = (gKc + 1) % 7; gBeep(false); gKbdRender(); }
-      else if (k === 'up') { gKr = (gKr + gKbdRows.length - 1) % gKbdRows.length; gBeep(false); gKbdRender(); }
-      else if (k === 'down') {
-        if (gKr === gKbdRows.length - 1 && res.length) {
-          gKbdOn = false; gSheetIdx = 0; gBeep(false); gKbdRender(); gSheetHighlight(0);
-        } else { gKr = (gKr + 1) % gKbdRows.length; gBeep(false); gKbdRender(); }
+      else if (k === 'up') {
+        if (gKr === 0 && res.length) { gBeep(false); gEnterSr(); }
+        else { gKr = (gKr + gKbdRows.length - 1) % gKbdRows.length; gBeep(false); gKbdRender(); }
+      } else if (k === 'down') {
+        if (gKr === gKbdRows.length - 1 && res.length) { gBeep(false); gEnterSr(); }
+        else { gKr = (gKr + 1) % gKbdRows.length; gBeep(false); gKbdRender(); }
       }
       else if (k === 'ok') { gBeep(true); gKbdPress(); }
     } else {
+      if (!res.length) { gKbdOn = true; gKbdRender(); return; }
       if (k === 'up') {
         if (gSheetIdx <= 0) { gKbdOn = true; document.querySelectorAll('.gFocus').forEach(el => el.classList.remove('gFocus')); gBeep(false); gKbdRender(); }
         else { gBeep(false); gSheetHighlight(-1); }
-      } else if (k === 'down') { gBeep(false); gSheetHighlight(1); }
-      else if (k === 'ok') {
-        if (res[gSheetIdx]) { gBeep(true); locLock = false; res[gSheetIdx].click(); $('sb').classList.remove('g-open'); gUpdateCross(); }
+      } else if (k === 'down') {
+        if (gSheetIdx >= res.length - 1) { gKbdOn = true; document.querySelectorAll('.gFocus').forEach(el => el.classList.remove('gFocus')); gBeep(false); gKbdRender(); }
+        else { gBeep(false); gSheetHighlight(1); }
+      } else if (k === 'ok') {
+        const it = res[gSheetIdx];
+        if (it) { gBeep(true); locLock = false; it.click(); $('sb').classList.remove('g-open'); gUpdateCross(); gTickHud(); }
       }
     }
     return;
