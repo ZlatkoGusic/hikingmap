@@ -129,6 +129,25 @@
     return count;
   }
 
+  /**
+   * Returns a human-readable Bosnian label for the currently active map tool,
+   * or null when no tool / pick mode / calibration is active.
+   */
+  function getActiveToolLabel(state) {
+    if (!state) return null;
+    if (state.objPick || state.calOn) return 'Kalibracija';
+    if (state.markMode) return 'Dodaj marker';
+    if (state.pickCb) return 'Odabir tačke';
+    const map = {
+      bearing: 'Azimut',
+      measure: 'Mjerenje',
+      elev: 'Visina',
+      radius: 'Radius',
+      route: 'Dionica A→B'
+    };
+    return (state.mode && map[state.mode]) || null;
+  }
+
   return {
     ROUTE_PROFILES,
     getRouteProfile,
@@ -137,6 +156,7 @@
     calcRecElapsedMs,
     calcScaleBar,
     formatSosText,
-    estimateTileCount
+    estimateTileCount,
+    getActiveToolLabel
   };
 });

@@ -80,3 +80,12 @@ test('estimateTileCount computes bounded tile counts accurately', () => {
   );
   assert.ok(n > 0 && n < 200);
 });
+
+test('getActiveToolLabel returns consistent Bosnian labels for active tools', () => {
+  assert.equal(HikeMath.getActiveToolLabel({}), null);
+  assert.equal(HikeMath.getActiveToolLabel({ mode: 'bearing' }), 'Azimut');
+  assert.equal(HikeMath.getActiveToolLabel({ mode: 'route' }), 'Dionica A→B');
+  assert.equal(HikeMath.getActiveToolLabel({ markMode: true, pickCb: true }), 'Dodaj marker');
+  assert.equal(HikeMath.getActiveToolLabel({ pickCb: true }), 'Odabir tačke');
+  assert.equal(HikeMath.getActiveToolLabel({ calOn: true }), 'Kalibracija');
+});
