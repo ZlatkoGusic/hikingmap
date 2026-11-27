@@ -843,8 +843,11 @@ svg.leaflet-image-layer.leaflet-interactive path {
     background-position: 0 0, 3px 3px, 0 0;
     border-top: 1px solid #313538;
     box-shadow: inset 0 1px 0 rgba(255,255,255,.06);
-    display: grid; grid-template-columns: 78px 1fr 82px; align-items: center; gap: 10px;
+    display: grid; grid-template-columns: 82px 1fr 82px; align-items: center; gap: 10px;
     user-select: none; -webkit-user-select: none; touch-action: manipulation;
+  }
+  @media (max-width: 374px) {
+    #gDeck { padding-left: 10px; padding-right: 10px; gap: 6px; grid-template-columns: 76px 1fr 78px; }
   }
   /* Side grip ribs */
   #gDeck::before, #gDeck::after {
@@ -853,20 +856,46 @@ svg.leaflet-image-layer.leaflet-interactive path {
   }
   #gDeck::before { left: 4px; } #gDeck::after { right: 4px; background: repeating-linear-gradient(35deg, #0d0e0f 0 2px, transparent 2px 6px); }
 
-  /* Left side MENU / NAZAD with recessed divider notch */
-  .gSide { display: flex; flex-direction: column; gap: 12px; align-items: stretch; }
-  .gNotch { height: 5px; margin: 2px 6px; border-radius: 99px; background: #121415; box-shadow: inset 0 1px 2px rgba(0,0,0,.85), 0 1px 0 rgba(255,255,255,.06); }
-  .gWell { padding: 3px; border-radius: 13px; background: #101213; box-shadow: inset 0 2px 5px rgba(0,0,0,.85), 0 1px 0 rgba(255,255,255,.06); }
+  /* Left side MENU / NAZAD — exact 150px outer height match with right pod */
+  .gSide { display: flex; flex-direction: column; justify-content: space-between; gap: 8px; height: 150px; align-items: stretch; }
+  .gNotch { flex: none; height: 4px; margin: 0 8px; border-radius: 99px; background: #101213; box-shadow: inset 0 1px 2px rgba(0,0,0,.9), 0 1px 0 rgba(255,255,255,.07); }
+  .gWell { flex: 1; display: flex; padding: 3px; border-radius: 13px; background: #0f1112; box-shadow: inset 0 2px 5px rgba(0,0,0,.88), 0 1px 0 rgba(255,255,255,.06); }
   .gBtn {
-    width: 100%; appearance: none;
-    border: 1px solid #3b4044; border-top-color: #4a5055; border-bottom-color: #121415;
-    background: linear-gradient(180deg, #323639 0%, #232628 55%, #1d2022 100%);
-    color: #dfe4e0; border-radius: 10px; padding: 12px 4px;
-    font: 600 11.5px/1 system-ui, -apple-system, sans-serif; letter-spacing: .07em; text-transform: uppercase;
-    box-shadow: 0 3px 5px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.11);
-    cursor: pointer; display: grid; place-items: center; transition: transform .07s, box-shadow .07s;
+    position: relative; overflow: hidden;
+    width: 100%; height: 100%; appearance: none;
+    border: 1px solid #3c4145; border-top-color: #4c5257; border-bottom-color: #121415;
+    background: linear-gradient(180deg, #33373b 0%, #232629 56%, #1c1f21 100%);
+    color: #e6ebe8; border-radius: 10px; padding: 0 4px;
+    font: 700 11.5px/1 system-ui, -apple-system, sans-serif; letter-spacing: .08em; text-transform: uppercase;
+    box-shadow: 0 3px 5px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.12);
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+    transition: transform .07s, box-shadow .12s, border-color .14s;
   }
   .gBtn:active { transform: translateY(1.5px); background: linear-gradient(180deg, #1f2224, #282c2f); box-shadow: 0 1px 2px rgba(0,0,0,.7), inset 0 2px 4px rgba(0,0,0,.5); }
+  .gMenuBtn { flex-direction: column; gap: 0; padding: 6px 4px 5px; }
+  .gMenuBtn .gBtnLbl { display: block; line-height: 1; margin-top: 1px; }
+  .gMenuBtn .gBtnDiv {
+    width: 48px; height: 1px; margin: 5px 0 4px; flex: none;
+    background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,.16) 50%, transparent 100%);
+  }
+  .gMenuBtn .gSubRot {
+    display: inline-flex; align-items: center; justify-content: center; gap: 3.5px;
+    font: 700 8.5px/1 ui-monospace, Menlo, system-ui, monospace; letter-spacing: .07em;
+    color: #f39a90; transition: color .15s;
+  }
+  .gMenuBtn .gSubRot svg { width: 11px; height: 11px; flex: none; display: block; filter: drop-shadow(0 1px 1px rgba(0,0,0,.55)); }
+  .gMenuBtn .gSubRot .icoH { display: none; }
+  .gMenuBtn.rot .gSubRot { color: #9ad67f; }
+  .gMenuBtn.rot .gSubRot .icoN { display: none; }
+  .gMenuBtn.rot .gSubRot .icoH { display: block; }
+  .gMenuBtn::after {
+    content: ''; position: absolute; left: 6px; right: 6px; bottom: 2px; height: 2px; border-radius: 2px;
+    background: #ff695c; transform: scaleX(0); transform-origin: left center; opacity: 0; pointer-events: none;
+  }
+  .gMenuBtn.rot::after { background: #8ec974; }
+  .gMenuBtn.hold { border-color: #7e888d; box-shadow: 0 2px 6px rgba(0,0,0,.65), inset 0 1px 0 rgba(255,255,255,.16); }
+  .gMenuBtn.hold::after { opacity: .95; transform: scaleX(1); transition: transform .5s linear, opacity .06s; }
+  .gMenuBtn.flash { border-color: #d6dfda; box-shadow: 0 0 10px rgba(214,223,218,.4), inset 0 1px 0 rgba(255,255,255,.24); }
 
   /* Sculpted Continuous Cross D-Pad */
   .gPad {
@@ -964,7 +993,13 @@ svg.leaflet-image-layer.leaflet-interactive path {
 
   /* SOS hold-to-activate feedback & outdoor display modes */
   .gSos { position: relative; overflow: hidden; }
-  .gSos.hold { box-shadow: 0 0 18px rgba(255,95,40,.9), inset 0 0 0 2px #fff; filter: brightness(1.15); }
+  .gSos::after {
+    content: ''; position: absolute; inset: 0; pointer-events: none;
+    background: linear-gradient(180deg, rgba(255,255,255,.42) 0%, rgba(255,255,255,.22) 100%);
+    transform: scaleY(0); transform-origin: center top; opacity: 0;
+  }
+  .gSos.hold { box-shadow: 0 0 18px rgba(255,95,40,.9), inset 0 0 0 2px #fff; filter: brightness(1.12); }
+  .gSos.hold::after { opacity: 1; transform: scaleY(1); transition: transform 1s linear, opacity .06s; }
   body.g-sun #map { filter: contrast(1.18) saturate(1.15); }
   body.g-night #map { filter: invert(1) hue-rotate(180deg) brightness(.72) contrast(1.15); }
 
@@ -1281,7 +1316,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
 </div>
 <div id="gDeck" aria-label="Kontrole uređaja">
   <div class="gSide">
-    <div class="gWell"><button class="gBtn" data-k="menu">MENU</button></div>
+    <div class="gWell"><button class="gBtn gMenuBtn" id="gMenuBtn" data-k="menu" aria-label="MENU (drži za Sjever ili Smjer)"><span class="gBtnLbl">MENU</span><span class="gBtnDiv" aria-hidden="true"></span><span class="gSubRot" id="gMenuRot"><svg viewBox="0 0 16 16" aria-hidden="true"><g class="icoN"><path d="M8 1L11.5 8H4.5Z" fill="#ff5447"/><path d="M8 15L11.5 8H4.5Z" fill="#9aa49f"/></g><g class="icoH"><path d="M8 1.2L13.4 14.2L8 11.2L2.6 14.2Z" fill="#9ad67f"/></g></svg><span id="gMenuRotT">SJEVER</span></span></button></div>
     <div class="gNotch" aria-hidden="true"></div>
     <div class="gWell"><button class="gBtn" data-k="back">NAZAD</button></div>
   </div>
@@ -1298,7 +1333,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
       <div class="zDiv" aria-hidden="true"></div>
       <button data-k="zout" data-rep="1" aria-label="Umanji">−</button>
     </div>
-    <button class="gSos" data-k="sos" aria-label="Hitno SOS">SOS</button>
+    <button class="gSos" data-k="sos" aria-label="Hitno SOS (drži 1 sekundu)">SOS</button>
   </div>
 </div>
 <input type="file" id="gpxIn" accept=".gpx,.xml,application/gpx+xml,text/xml" multiple hidden>
@@ -1914,6 +1949,12 @@ function updRotLabel() {
   $('rotM').textContent = (mapRot ? 'Smjer' : 'Sjever') + off;
   const bc = $('bCal');
   if (bc) { $('bCalT').textContent = hdgOff ? 'Poravnaj' + off : 'Poravnaj'; bc.classList.toggle('active', calOn); }
+  const mb = $('gMenuBtn'), mt = $('gMenuRotT');
+  if (mb && mt) {
+    mb.classList.toggle('rot', mapRot);
+    mt.textContent = mapRot ? 'SMJER' : 'SJEVER';
+    mb.setAttribute('aria-label', 'MENU · ' + (mapRot ? 'Po smjeru' : 'Po sjeveru') + ' (drži za promjenu)');
+  }
   updCalPill(); updCalMeta();
 }
 let lastNavHdg = 0;
@@ -2695,7 +2736,7 @@ startWatch();
 /* === PURE BUTTON-ONLY HANDHELD CONTROLLER === */
 ['dragging','touchZoom','doubleClickZoom','scrollWheelZoom','boxZoom','tapHold'].forEach(h => map[h] && map[h].disable());
 $('q').setAttribute('readonly', 'readonly'); $('q').setAttribute('inputmode', 'none');
-let gStack = [], gIdx = 0, gLayIdx = 0, gSheetIdx = 0, gObjPick = false, gDispMode = 0, gSosHintUntil = 0, gNavExitUntil = 0, gTrkClearUntil = 0, gSnapMk = null, gSnapTrk = null, gSnapRtIdx = null, gSnapCool = 0, gReturnMenu = null;
+let gStack = [], gIdx = 0, gLayIdx = 0, gSheetIdx = 0, gObjPick = false, gDispMode = 0, gSosHintUntil = 0, gNavExitUntil = 0, gTrkClearUntil = 0, gRotHintUntil = 0, gSnapMk = null, gSnapTrk = null, gSnapRtIdx = null, gSnapCool = 0, gReturnMenu = null;
 let gKbdOn = true, gKr = 0, gKc = 0, gMkKbdOn = false, gMkKr = 0, gMkKc = 0;
 let gRadOn = false, gRadStr = '500', gRadR = 4, gRadC = 0;
 const gRadRows = [
@@ -3352,6 +3393,88 @@ function gKey(k, fast = false) {
         });
         return;
       }
+      if (k === 'menu') {
+        let mT = 0, mLong = false, mLongAt = 0;
+        const clearM = () => {
+          clearTimeout(mT); mT = 0;
+          btn.classList.remove('hold');
+          if (mLong) {
+            if (mapRot && !oriOn) compassListen();
+            setTimeout(() => { mLong = false; }, 350);
+          }
+        };
+        const startM = () => {
+          clearTimeout(mT); mT = 0; mLong = false;
+          btn.classList.add('hold');
+          mT = setTimeout(() => {
+            mLong = true; mLongAt = Date.now(); mT = 0;
+            btn.classList.remove('hold');
+            btn.classList.add('flash');
+            setTimeout(() => btn.classList.remove('flash'), 240);
+            gHaptic('ok'); calTick(true);
+            setMapRot(!mapRot);
+            gRotHintUntil = Date.now() + 2400;
+            if ($('gMenu').classList.contains('on')) gMenuRender();
+            gTickHud();
+          }, 500);
+        };
+        btn.addEventListener('touchstart', () => { lastTouch = Date.now(); startM(); }, { passive: true });
+        btn.addEventListener('touchend', clearM, { passive: true });
+        btn.addEventListener('touchcancel', clearM, { passive: true });
+        btn.addEventListener('mousedown', () => { if (Date.now() - lastTouch >= 700) startM(); });
+        btn.addEventListener('mouseup', clearM);
+        btn.addEventListener('mouseleave', clearM);
+        btn.addEventListener('click', e => {
+          e.stopPropagation();
+          if (mLong || Date.now() - mLongAt < 400) { mLong = false; return; }
+          if (mapRot && !oriOn) compassListen();
+          gKey(k);
+        });
+        return;
+      }
+      if (k === 'sos') {
+        let sT = 0, sLong = false, sDown = false;
+        const cancelS = (showHint = false) => {
+          clearTimeout(sT); sT = 0;
+          btn.classList.remove('hold');
+          if (sDown && !sLong && showHint) {
+            gBeep(false);
+            gSosHintUntil = Date.now() + 2600;
+            gTickHud();
+          }
+          sDown = false;
+          if (sLong) setTimeout(() => { sLong = false; }, 350);
+        };
+        const startS = () => {
+          clearTimeout(sT); sT = 0; sLong = false; sDown = true;
+          btn.classList.add('hold');
+          gSosHintUntil = Date.now() + 1800;
+          gTickHud();
+          sT = setTimeout(() => {
+            sLong = true; sDown = false; sT = 0;
+            btn.classList.remove('hold');
+            gSosHintUntil = 0;
+            gKey('sos');
+            gTickHud();
+          }, 1000);
+        };
+        btn.addEventListener('touchstart', () => { lastTouch = Date.now(); startS(); }, { passive: true });
+        btn.addEventListener('touchend', () => cancelS(true), { passive: true });
+        btn.addEventListener('touchcancel', () => cancelS(false), { passive: true });
+        btn.addEventListener('mousedown', () => { if (Date.now() - lastTouch >= 700) startS(); });
+        btn.addEventListener('mouseup', () => cancelS(true));
+        btn.addEventListener('mouseleave', () => cancelS(false));
+        btn.addEventListener('click', e => {
+          e.stopPropagation();
+          e.preventDefault();
+          if (!sLong && Date.now() >= gSosHintUntil) {
+            gBeep(false);
+            gSosHintUntil = Date.now() + 2600;
+            gTickHud();
+          }
+        });
+        return;
+      }
       btn.addEventListener('click', e => {
         e.stopPropagation();
         if (mapRot && !oriOn) compassListen();
@@ -3398,6 +3521,9 @@ function gTickHud() {
   if (Date.now() < gSosHintUntil) {
     st.classList.add('rec'); tag.textContent = 'SOS ZAŠTITA';
     txt.textContent = 'Drži SOS 1 sekundu za aktivaciju';
+  } else if (Date.now() < gRotHintUntil) {
+    st.classList.remove('rec'); tag.textContent = 'KOMPAS';
+    txt.textContent = mapRot ? 'Po smjeru · karta se rotira' : 'Po sjeveru · sjever fiksno gore';
   } else if (Date.now() < gNavExitUntil && navT) {
     st.classList.add('rec'); tag.textContent = 'IZLAZ?';
     txt.textContent = 'Pritisni NAZAD opet za prekid';
