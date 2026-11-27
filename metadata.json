@@ -1,0 +1,7 @@
+{
+  "name": "Hiking mapa",
+  "description": "Offline-capable hiking map and handheld GPS navigation web application.",
+  "requestFramePermissions": [
+    "geolocation"
+  ]
+}

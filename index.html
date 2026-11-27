@@ -1138,6 +1138,53 @@ svg.leaflet-image-layer.leaflet-interactive path {
   .sunPin.sh { color: #e2e8f0; border-color: #94a3b8; }
   .sunPin.mn { color: #7ee8ff; border-color: #00d4ff; }
   .sunPin.pl { color: #86efac; border-color: #4ade80; }
+
+  /* Compact bottom dock for A→B route (3 trails + visible actions + clear map) */
+  #gScreen #ip.route-dock {
+    left: 0 !important; right: 0 !important; top: auto !important; bottom: 44px !important;
+    width: auto !important; max-width: none !important; max-height: 46% !important;
+    border-left: 0 !important; border-right: 0 !important; border-bottom: 0 !important;
+    border-top: 2px solid #f0622b !important;
+    padding: 7px 9px 8px !important;
+    background: rgba(14, 16, 17, .96) !important;
+    box-shadow: 0 -6px 22px rgba(0,0,0,.68) !important;
+  }
+  #gScreen #ip.route-dock::before { display: none !important; }
+  #gScreen #ip.route-dock .x { display: none !important; }
+  #gScreen #ip.route-dock #prof { height: 42px !important; margin-top: 4px !important; }
+  .rtDock { display: flex; flex-direction: column; gap: 6px; }
+  .rtHd { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+  .rtHd .rtDist { font: 700 14.5px/1.1 ui-monospace, Menlo, monospace; color: #f6f8f7; }
+  .rtHd .rtMeta { font: 600 10.5px/1.1 ui-monospace, Menlo, monospace; color: #9aa49e; white-space: nowrap; }
+  .rtStats { display: flex; flex-wrap: wrap; gap: 8px; font: 600 10.5px/1.2 ui-monospace, Menlo, monospace; color: #cfd6d2; }
+  .rtStats b { color: #fff; }
+  .rtAlts { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; }
+  .rtAlts.c2 { grid-template-columns: repeat(2, 1fr); }
+  .rtAlts button {
+    margin: 0 !important; padding: 6px 4px !important;
+    display: flex; flex-direction: column; align-items: center; gap: 2px;
+    background: #202427 !important; color: #b7c1bc !important;
+    border: 1px solid #383e42 !important; border-radius: 0 !important;
+    font: 700 10.5px/1.1 ui-monospace, Menlo, monospace !important;
+  }
+  .rtAlts button small { font: 500 9.5px/1 ui-monospace, Menlo, monospace; color: #8c9691; }
+  .rtAlts button.rtSel {
+    background: #3a2319 !important; color: #fff !important;
+    border-color: #f0622b !important; box-shadow: inset 0 -2px 0 #f0622b;
+  }
+  .rtAlts button.rtSel small { color: #f8c5ad; }
+  .rtAlts button.gFocus { outline: 2px solid #e6eae7 !important; outline-offset: -1px; background: #4a3022 !important; color: #fff !important; }
+  .rtAct { display: grid; grid-template-columns: 1.25fr 1fr 1fr; gap: 5px; }
+  .rtAct button {
+    margin: 0 !important; padding: 8px 6px !important;
+    border-radius: 0 !important; font: 700 11.5px/1 system-ui !important;
+    border: 1px solid #3c4245 !important;
+  }
+  .rtAct button.rtGo { background: #2d5a3c !important; border-color: #6ca97b !important; color: #fff !important; }
+  .rtAct button.gray { background: #232729 !important; color: #dce2de !important; }
+  .rtAct button.gFocus { outline: 2px solid #fff !important; outline-offset: -1px; filter: brightness(1.18); }
+  .rtFoot { font: 500 9.5px/1.1 ui-monospace, Menlo, monospace; color: #828c87; display: flex; justify-content: space-between; gap: 6px; }
+  .rtSaved { color: #86efac; font-weight: 700; }
 </style>
 
 
@@ -1386,7 +1433,7 @@ function onPos(pos) {
   if (firstFix) { locLock = true; centerOnMe(15, false); firstFix = false; } else if (locLock || follow) centerOnMe(map.getZoom(), true);
   recPoint(pos); navUpdate(); sosTick(pos);
 }
-function onErr(e) { info.textContent = ({1:'Pristup lokaciji odbijen.',2:'Lokacija nedostupna – uključi GPS.',3:'Isteklo vrijeme.'})[e.code] || e.message; if (!isSecureContext) info.textContent += ' (Potreban je HTTPS.)'; }
+function onErr(e) { if ($('gMenu') && $('gMenu').classList.contains('on')) return; info.textContent = ({1:'Pristup lokaciji odbijen.',2:'Lokacija nedostupna – uključi GPS.',3:'Isteklo vrijeme.'})[e.code] || e.message; if (!isSecureContext) info.textContent += ' (Potreban je HTTPS.)'; }
 function startWatch() { if (!navigator.geolocation) { info.textContent = 'Geolokacija nije podržana.'; return; }
   if (watchId !== null) { if (me) centerOnMe(Math.max(map.getZoom(), 15), true); return; }
   info.textContent = 'Tražim lokaciju…'; watchId = navigator.geolocation.watchPosition(onPos, onErr, { enableHighAccuracy: true, maximumAge: 3000, timeout: 20000 }); }
@@ -1399,9 +1446,9 @@ const btns = { measure: $('bMeasure'), bearing: $('bBearing'), radius: $('bRadiu
 function setMode(m) { dr(false); mode = mode === m ? null : m; Object.entries(btns).forEach(([k, b]) => b.classList.toggle('active', k === mode));
   $('radRow').style.display = mode === 'radius' ? 'flex' : 'none'; resetTools();
   info.textContent = mode ? ({ measure: 'Dodiruj tačke za mjerenje putanje.', bearing: me ? 'Dodirni tačku – bearing od tvoje lokacije.' : 'Dodirni početnu tačku, pa odredište.', radius: 'Dodirni centar, pa drugu tačku (ili upiši radius).', elev: 'Dodirni tačku za nadmorsku visinu.', route: 'Dodirni A, pa B (i dalje za još dionica). Staza se traži po putevima – treba internet.' })[mode] : 'Alat isključen.'; }
-function resetTools() { tools.clearLayers(); rPts = []; rSegs = []; mPts = []; mLine = rCenter = bStart = null; prof.style.display = 'none'; token++; }
+function resetTools() { tools.clearLayers(); rPts = []; rSegs = []; mPts = []; mLine = rCenter = bStart = null; if (typeof gSnapRtIdx !== 'undefined') gSnapRtIdx = null; prof.style.display = 'none'; token++; }
 for (const k in btns) btns[k].onclick = () => setMode(k);
-$('bClear').onclick = () => { dr(false); resetTools(); trk.clearLayers(); info.textContent = 'Obrisano.'; };
+$('bClear').onclick = () => { dr(false); resetTools(); trk.clearLayers(); curTrack = null; if (typeof gSnapTrk !== 'undefined') gSnapTrk = null; info.textContent = 'Obrisano.'; };
 map.on('click', async e => { const p = e.latlng; if (pickCb) { const f = pickCb; pickCb = null; info.innerHTML = ''; f(p); return; } sheet();
   if (calOn) { calAlignTo(p); return; }
   if (mode === 'measure') measureAdd(p); else if (mode === 'bearing') await bearingTo(p); else if (mode === 'radius') radiusClick(p); else if (mode === 'elev') await elevAt(p); else if (mode === 'route') await routeAdd(p); });
@@ -1618,8 +1665,8 @@ async function tracksOpen() {
   const all = (await idb('tracks', 'readonly', o => o.getAll()).catch(() => [])).filter(t => t && t.id); all.forEach(t => trackCache[t.id] = t);
   sheet('<b>Spremljene rute</b>' + (all.length ? all.sort((a, b) => b.date - a.date).map(t => '<div class="item"><span><b>' + esc(t.name) + '</b><br>' + fmtD(stats(t.pts).d) + ' · ' + new Date(t.date).toLocaleDateString() +
     '</span><span><button onclick="trkFollow(\'' + t.id + '\')">▶ Prati</button> <button class="gray" onclick="trkShow(\'' + t.id + '\')">Prikaži</button> <button class="gray" onclick="exportGpx(\'' + t.id + '\')">GPX</button> <button class="red" onclick="trkDel(\'' + t.id + '\')">✕</button></span></div>').join('') : '<p>Nema spremljenih ruta. Snimi rutu ili uvezi GPX.</p>')); }
-const trkShow = id => { sheet(); showTrack(trackCache[id]); };
-const trkFollow = id => { sheet(); const t = trackCache[id]; if (t) { showTrack(t, false); navFollow(t); } };
+const trkShow = id => { if (typeof gReturnMenu !== 'undefined') gReturnMenu = null; sheet(); showTrack(trackCache[id]); };
+const trkFollow = id => { if (typeof gReturnMenu !== 'undefined') gReturnMenu = null; sheet(); const t = trackCache[id]; if (t) { showTrack(t, false); navFollow(t); } };
 const trkDel = async id => { await dbDel('tracks', id); delete trackCache[id]; tracksOpen(); };
 
 /* ---------- Snimanje rute ---------- */
@@ -1636,9 +1683,25 @@ async function recStop() {
   const r = rec; rec = null; map.removeLayer(recLine); dbDel('tracks', 'cur'); if (wake) wake.release().catch(() => {});
   $('bRecT').textContent = 'Snimaj rutu'; $('bRec').classList.remove('active'); $('bPause').style.display = 'none'; updRec();
   if (r.pts.length < 2) { info.textContent = 'Premalo tačaka – ruta nije spremljena.'; return; }
-  const t = { id: 'trk' + Date.now(), name: prompt('Naziv rute:', 'Tura ' + new Date().toLocaleDateString()) || 'Tura', pts: r.pts, date: Date.now() };
+  const defNm = 'Tura ' + new Date().toLocaleDateString() + ' ' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  let nm = defNm; try { nm = prompt('Naziv rute:', defNm) || defNm; } catch (e) {}
+  const t = { id: 'trk' + Date.now(), name: nm, pts: r.pts, date: Date.now() };
   await dbSet('tracks', t.id, t); trackCache[t.id] = t; showTrack(t); }
-$('bRec').onclick = () => rec ? recStop() : recStart();
+function recAskStart() {
+  sheet('<b>Započeti snimanje rute?</b><div class="kv">Želite li započeti snimanje nove GPS rute?</div>' +
+    '<div class="row"><button onclick="recConfirmStart()">Da, započni</button><button class="gray" onclick="recCancelAsk()">Ne, odustani</button></div>');
+}
+function recConfirmStart() {
+  gReturnMenu = null; sheet(); recStart(); gUpdateCross(); gTickHud();
+}
+function recCancelAsk() {
+  sheet();
+  if (gReturnMenu) {
+    gStack = gReturnMenu.stack; gIdx = gReturnMenu.idx; gReturnMenu = null;
+    $('gMenu').classList.add('on'); gMenuRender(); gUpdateCross();
+  } else { gUpdateCross(); gTickHud(); }
+}
+$('bRec').onclick = () => rec ? recStop() : recAskStart();
 $('bPause').onclick = () => { rec.paused = !rec.paused; $('bPauseT').textContent = rec.paused ? 'Nastavi' : 'Pauza'; updRec(); };
 setInterval(() => rec && updRec(), 5000);
 dbGet('tracks', 'cur').then(c => { if (c && c.pts && c.pts.length > 1 && confirm('Nađeno prekinuto snimanje. Nastaviti?')) recStart(c); });
@@ -2103,7 +2166,12 @@ if (!(window.DeviceOrientationEvent && DeviceOrientationEvent.requestPermission)
 function dr(on) { if (on) pickCb = null; $('dr').style.display = on ? 'block' : 'none'; $('fabs').style.display = on ? 'none' : 'flex'; if (on) sheet(); }
 function tab(i) { document.querySelectorAll('.pane').forEach((p, j) => p.style.display = j === i ? 'grid' : 'none'); document.querySelectorAll('.seg button').forEach((b, j) => b.classList.toggle('on', j === i)); }
 tab(0);
-new MutationObserver(() => { $('ip').style.display = info.textContent.trim() ? 'block' : 'none'; }).observe(info, { childList: true, subtree: true, characterData: true });
+new MutationObserver(() => {
+  const has = !!info.textContent.trim();
+  $('ip').style.display = has ? 'block' : 'none';
+  $('ip').classList.toggle('route-dock', has && !!info.querySelector('.rtDock'));
+  if (typeof gUpdateCross === 'function') gUpdateCross();
+}).observe(info, { childList: true, subtree: true, characterData: true });
 
 /* ---------- Dionica A→B po stazi / putu (do 3 alternative) ---------- */
 async function routeSegAlts(a, b, pf) {
@@ -2142,10 +2210,26 @@ async function routeSegAlts(a, b, pf) {
   }
   try { return [await osm(pf === 'foot' ? 'foot' : 'car')()]; } catch (e) { return null; }
 }
+let gRouteKeepFocus = null;
+function routeFitMap() {
+  const ll = [];
+  rPts.forEach(p => ll.push([p.lat, p.lng]));
+  rSegs.forEach(s => {
+    (s.alts && s.alts.length ? s.alts : [s]).forEach(al => {
+      const step = Math.max(1, Math.floor(al.pts.length / 40));
+      for (let i = 0; i < al.pts.length; i += step) ll.push([al.pts[i].lat, al.pts[i].lng]);
+      if (al.pts.length) { const last = al.pts[al.pts.length - 1]; ll.push([last.lat, last.lng]); }
+    });
+  });
+  if (ll.length < 2) return;
+  const dockH = Math.min(Math.round(map.getSize().y * 0.46), 255);
+  map.fitBounds(L.latLngBounds(ll), { paddingTopLeft: [28, 28], paddingBottomRight: [28, dockH + 54], animate: true });
+}
 function routePickAlt(idx) {
   const seg = rSegs[rSegs.length - 1];
   if (!seg || !seg.alts || !seg.alts[idx]) return;
   seg.altIdx = idx; seg.pts = seg.alts[idx].pts; seg.d = seg.alts[idx].d;
+  gRouteKeepFocus = idx;
   routeDraw(); routeInfo();
 }
 function routeDraw() { tools.clearLayers();
@@ -2153,45 +2237,114 @@ function routeDraw() { tools.clearLayers();
     if (s.alts && s.alts.length > 1) {
       s.alts.forEach((al, idx) => {
         if (idx === (s.altIdx || 0)) return;
-        L.polyline(al.pts.map(p => [p.lat, p.lng]), { color: '#6b7d87', weight: 3.5, dashArray: '6 6', opacity: .8 }).addTo(tools);
+        const pts = al.pts.map(p => [p.lat, p.lng]);
+        L.polyline(pts, { color: '#101214', weight: 5.5, opacity: .55 }).addTo(tools);
+        L.polyline(pts, { color: '#cbd5e1', weight: 3, dashArray: '6 6', opacity: .92 }).addTo(tools);
+        const am = al.pts[al.pts.length >> 1];
+        if (am) label([am.lat, am.lng], String(idx + 1));
       });
     }
-    L.polyline(s.pts.map(p => [p.lat, p.lng]), { color: '#f0622b', weight: 5, opacity: .94 }).addTo(tools);
-    const m = s.pts[s.pts.length >> 1]; label([m.lat, m.lng], fmtD(s.d));
+    const selPts = s.pts.map(p => [p.lat, p.lng]);
+    L.polyline(selPts, { color: '#141618', weight: 7.5, opacity: .78 }).addTo(tools);
+    L.polyline(selPts, { color: '#f0622b', weight: 4.5, opacity: .98 }).addTo(tools);
+    const m = s.pts[s.pts.length >> 1];
+    if (m) label([m.lat, m.lng], (s.alts && s.alts.length > 1 ? '#' + ((s.altIdx || 0) + 1) + ' · ' : '') + fmtD(s.d));
   });
-  rPts.forEach((p, i) => { dot(p, i === 0 ? '#2e7d32' : '#d93025'); label(p, String.fromCharCode(65 + (i % 26))); });
+  rPts.forEach((p, i) => {
+    L.circleMarker(p, { radius: 8, color: '#fff', weight: 2.5, fillColor: i === 0 ? '#2e7d32' : '#d93025', fillOpacity: 1 }).addTo(tools);
+    label(p, String.fromCharCode(65 + (i % 26)));
+  });
 }
 async function routeAdd(p) {
-  if (busy) return; rPts.push(p); routeDraw(); if (rPts.length < 2) { info.innerHTML = ''; gTickHud(); return; }
+  if (busy) return;
+  rPts.push(p); gSnapRtIdx = null; gSnapCool = Date.now() + 650;
+  routeDraw();
+  if (rPts.length < 2) { info.innerHTML = ''; prof.style.display = 'none'; gUpdateCross(); gTickHud(); return; }
   busy = true; info.innerHTML = '<i>Tražim najbolje staze (do 3 opcije)…</i>';
   const alts = await routeSegAlts(rPts[rPts.length - 2], p, $('rtProf').value); busy = false;
   if (!alts || !alts.length) { rPts.pop(); routeDraw(); info.textContent = 'Staza nije nađena (treba internet ili nema puta).'; return; }
   rSegs.push({ pts: alts[0].pts, d: alts[0].d, alts, altIdx: 0 });
   routeDraw(); routeInfo();
+  setTimeout(routeFitMap, 60);
 }
-function routeUndo() { rPts.pop(); rSegs.pop(); routeDraw(); if (rSegs.length) routeInfo(); else info.innerHTML = ''; }
+function routeUndo() {
+  rPts.pop(); rSegs.pop(); gSnapRtIdx = null;
+  routeDraw();
+  if (rSegs.length) routeInfo(); else { info.innerHTML = ''; prof.style.display = 'none'; }
+  gUpdateCross(); gTickHud();
+}
+function routePtDelAsk(idx) {
+  if (!rPts[idx]) return;
+  const lbl = String.fromCharCode(65 + (idx % 26));
+  sheet('<b>Obrisati tačku ' + lbl + '?</b><div class="kv">Želite li obrisati tačku <b>' + lbl + '</b> (' + fmtLL(rPts[idx]) + ') iz A→B rute?</div>' +
+    '<div class="row"><button class="red" onclick="routePtDelYes(' + idx + ')">Da, obriši</button>' +
+    '<button class="gray" onclick="sheet();gUpdateCross();gTickHud()">Ne, odustani</button></div>');
+}
+async function routePtDelYes(idx) {
+  sheet(); gSnapRtIdx = null; gSnapCool = Date.now() + 550;
+  if (idx < 0 || idx >= rPts.length) { gUpdateCross(); gTickHud(); return; }
+  if (rPts.length === 1) {
+    rPts = []; rSegs = []; routeDraw(); info.innerHTML = ''; prof.style.display = 'none';
+    gUpdateCross(); gTickHud(); return;
+  }
+  if (idx === rPts.length - 1) {
+    rPts.pop(); rSegs.pop(); routeDraw();
+    if (rSegs.length) routeInfo(); else { info.innerHTML = ''; prof.style.display = 'none'; }
+    gUpdateCross(); gTickHud(); return;
+  }
+  if (idx === 0) {
+    rPts.shift(); rSegs.shift(); routeDraw();
+    if (rSegs.length) routeInfo(); else { info.innerHTML = ''; prof.style.display = 'none'; }
+    gUpdateCross(); gTickHud(); return;
+  }
+  rPts.splice(idx, 1); rSegs.splice(idx - 1, 2);
+  routeDraw();
+  busy = true; info.innerHTML = '<i>Preračunavam dionicu…</i>';
+  const alts = await routeSegAlts(rPts[idx - 1], rPts[idx], $('rtProf').value); busy = false;
+  if (alts && alts.length) {
+    rSegs.splice(idx - 1, 0, { pts: alts[0].pts, d: alts[0].d, alts, altIdx: 0 });
+    routeDraw(); routeInfo(); setTimeout(routeFitMap, 60);
+  } else {
+    rPts = rPts.slice(0, idx); rSegs = rSegs.slice(0, Math.max(0, idx - 1));
+    routeDraw();
+    if (rSegs.length) routeInfo(); else { info.innerHTML = ''; prof.style.display = 'none'; }
+  }
+  gUpdateCross(); gTickHud();
+}
 async function routeInfo() {
   const all = rSegs.flatMap(s => s.pts), d = rSegs.reduce((a, s) => a + s.d, 0), a = rPts[0], b = rPts[rPts.length - 1];
-  const lastSeg = rSegs[rSegs.length - 1];
-  const altBtns = lastSeg && lastSeg.alts && lastSeg.alts.length > 1
-    ? '<div class="row" style="margin:5px 0">' + lastSeg.alts.map((al, i) =>
-        '<button class="' + (i === (lastSeg.altIdx || 0) ? '' : 'gray') + '" onclick="routePickAlt(' + i + ')">' + (i === 0 ? '★ ' : '') + 'Staza ' + (i + 1) + ' (' + fmtD(al.d) + ')</button>'
+  const lastSeg = rSegs[rSegs.length - 1], selIdx = lastSeg ? (lastSeg.altIdx || 0) : 0;
+  const alts = lastSeg && lastSeg.alts && lastSeg.alts.length > 1 ? lastSeg.alts : null;
+  const altBtns = alts
+    ? '<div class="rtAlts' + (alts.length === 2 ? ' c2' : '') + '">' + alts.map((al, i) =>
+        '<button class="' + (i === selIdx ? 'rtSel' : '') + '" onclick="routePickAlt(' + i + ')"><span>' + (i === 0 ? '★ ' : '') + 'Staza ' + (i + 1) + '</span><small>' + fmtD(al.d) + (al.up ? ' · +' + Math.round(al.up) + 'm' : '') + '</small></button>'
       ).join('') + '</div>' : '';
-  const head = () => '<b class="big">Dionica: ' + fmtD(d) + '</b>' + (lastSeg && lastSeg.alts && lastSeg.alts.length > 1 ? ' <small>(' + ((lastSeg.altIdx || 0) + 1) + '/' + lastSeg.alts.length + ')</small>' : '') +
-    '<br>Zračno A→kraj: ' + fmtD(dist(a, b)) + ' · ' + brg(bearing(a, b));
-  const btn = altBtns + '<div class="row"><button onclick="navFollowRoute()">▶ Prati rutu</button><button class="gray" onclick="routeSave()">Spremi</button><button class="gray" onclick="routeUndo()">↶ Nazad</button></div>';
-  info.innerHTML = head() + '<br><i>Računam visine…</i>' + btn; const my = ++token;
+  const actBtns = '<div class="rtAct"><button class="rtGo" onclick="navFollowRoute()">▶ Prati rutu</button><button class="gray" id="bRtSave" onclick="routeSave()">Spremi</button><button class="gray" onclick="routeUndo()">↶ Nazad</button></div>';
+  const foot = '<div class="rtFoot"><span>◀▶ Izbor · OK Potvrdi</span><span id="rtFootMsg">NAZAD Mapa / A-B</span></div>';
+  const renderDock = (statsHtml) => '<div class="rtDock">' +
+    '<div class="rtHd"><span class="rtDist">DIONICA ' + fmtD(d) + '</span><span class="rtMeta">' + (alts ? 'OPCIJA ' + (selIdx + 1) + '/' + alts.length + ' · ' : '') + brg(bearing(a, b)) + '</span></div>' +
+    '<div class="rtStats">' + statsHtml + '</div>' +
+    altBtns + actBtns + foot + '</div>';
+  const my = ++token;
   let el = all.every(p => p.alt != null) ? all.map(p => p.alt) : null;
-  if (!el) { const n = Math.min(100, all.length), S = []; for (let i = 0; i < n; i++) S.push(all[Math.round(i * (all.length - 1) / Math.max(1, n - 1))]); el = await safeElev(S); }
-  if (my !== token) return; if (!el) { info.innerHTML = head() + btn; return; }
+  if (!el) {
+    info.innerHTML = renderDock('<span>Zračno: <b>' + fmtD(dist(a, b)) + '</b></span><span><i>Računam visine…</i></span>');
+    const n = Math.min(100, all.length), S = []; for (let i = 0; i < n; i++) S.push(all[Math.round(i * (all.length - 1) / Math.max(1, n - 1))]);
+    el = await safeElev(S);
+    if (my !== token) return;
+  }
+  if (!el) { info.innerHTML = renderDock('<span>Zračno: <b>' + fmtD(dist(a, b)) + '</b></span>'); return; }
   const [up, dn] = asc(el), h = (d / 5000 + up / 600) * 3600000; routeEstMs = h;
-  info.innerHTML = head() + '<br>Uspon <b>+' + Math.round(up) + ' m</b> · Spust <b>−' + Math.round(dn) + ' m</b><br>Hod (Naismith): ≈ <b>' + fmtT(h).slice(0, -3) + ' h</b>' + btn;
+  info.innerHTML = renderDock('<span>▲ <b>+' + Math.round(up) + ' m</b></span><span>▼ <b>−' + Math.round(dn) + ' m</b></span><span>⏱ <b>≈ ' + fmtT(h).slice(0, -3) + ' h</b></span>');
   drawProfile(el);
 }
 async function routeSave() {
   const nm = 'Dionica ' + new Date().toLocaleDateString() + ' ' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   const t = { id: 'trk' + Date.now(), name: nm, pts: rSegs.flatMap(s => s.pts), date: Date.now() };
-  await dbSet('tracks', t.id, t); trackCache[t.id] = t; info.innerHTML += '<br>✓ Spremljeno u Rute.';
+  await dbSet('tracks', t.id, t); trackCache[t.id] = t;
+  const fm = $('rtFootMsg');
+  if (fm) { fm.textContent = '✓ Spremljeno u Rute'; fm.classList.add('rtSaved'); }
+  else info.innerHTML += '<br>✓ Spremljeno u Rute.';
 }
 
 /* ---------- Mjerilo (1:25 000 …) ---------- */
@@ -2364,7 +2517,11 @@ function navFollow(t) {
 }
 function navFollowRoute() {
   if (!rSegs.length) return;
-  navFollow({ name: 'Dionica A→B', pts: rSegs.flatMap(s => s.pts) });
+  const pts = rSegs.flatMap(s => s.pts);
+  mode = null; Object.values(btns).forEach(b => b.classList.remove('active'));
+  info.innerHTML = ''; prof.style.display = 'none'; $('ip').classList.remove('route-dock');
+  navFollow({ name: 'Dionica A→B', pts });
+  gUpdateCross(); gTickHud();
 }
 function navTo(ll, name) { navStop(); sheet(); startWatch(); navT = { ll, name, done: false };
   navLine = L.polyline([], { color: '#E24B4A', weight: 3, dashArray: '6 7' }).addTo(map); navDot = L.circleMarker(ll, { radius: 8, color: '#fff', weight: 2.5, fillColor: '#E24B4A', fillOpacity: 1 }).addTo(map);
@@ -2472,7 +2629,7 @@ startWatch();
 /* === PURE BUTTON-ONLY HANDHELD CONTROLLER === */
 ['dragging','touchZoom','doubleClickZoom','scrollWheelZoom','boxZoom','tapHold'].forEach(h => map[h] && map[h].disable());
 $('q').setAttribute('readonly', 'readonly'); $('q').setAttribute('inputmode', 'none');
-let gStack = [], gIdx = 0, gLayIdx = 0, gSheetIdx = 0, gObjPick = false, gDispMode = 0, gSosHintUntil = 0, gNavExitUntil = 0, gSnapMk = null, gSnapTrk = null, gSnapCool = 0, gReturnMenu = null;
+let gStack = [], gIdx = 0, gLayIdx = 0, gSheetIdx = 0, gObjPick = false, gDispMode = 0, gSosHintUntil = 0, gNavExitUntil = 0, gTrkClearUntil = 0, gSnapMk = null, gSnapTrk = null, gSnapRtIdx = null, gSnapCool = 0, gReturnMenu = null;
 let gKbdOn = true, gKr = 0, gKc = 0, gMkKbdOn = false, gMkKr = 0, gMkKc = 0;
 let gRadOn = false, gRadStr = '500', gRadR = 4, gRadC = 0;
 const gRadRows = [
@@ -2586,6 +2743,7 @@ function gKbdRender() {
 function gOpenSearch() {
   if (calOn) calToggle(false);
   sheet();
+  info.innerHTML = ''; prof.style.display = 'none'; $('ip').style.display = 'none'; $('ip').classList.remove('route-dock');
   const sb = $('sb');
   sb.style.display = 'flex'; sb.classList.add('g-open');
   gKbdOn = true; gKr = 0; gKc = 0; gSheetIdx = 0;
@@ -2635,8 +2793,27 @@ function gViewAtCross(ll, z, anim = false) {
   map.setView(map.unproject(L.point(p.x - ox, p.y - oy), tz), tz, { animate: anim });
 }
 function gCheckSnap() {
-  if (locLock || gAimActive() || calOn || Date.now() < gSnapCool) { gSnapMk = null; gSnapTrk = null; return; }
+  if (calOn || Date.now() < gSnapCool) { gSnapMk = null; gSnapTrk = null; gSnapRtIdx = null; return; }
   const c = gCrossLatLng(), cp = map.latLngToContainerPoint(c);
+  if (rPts.length > 0 && (mode === 'route' || (!locLock && !gAimActive()))) {
+    let bestIdx = -1, bestRD = 26;
+    for (let i = 0; i < rPts.length; i++) {
+      const rp = map.latLngToContainerPoint(L.latLng(rPts[i].lat, rPts[i].lng));
+      const d = cp.distanceTo(rp);
+      if (d < bestRD) { bestRD = d; bestIdx = i; }
+    }
+    if (bestIdx >= 0) {
+      gSnapMk = null; gSnapTrk = null;
+      if (bestIdx !== gSnapRtIdx) {
+        gSnapRtIdx = bestIdx;
+        gViewAtCross(L.latLng(rPts[bestIdx].lat, rPts[bestIdx].lng), map.getZoom(), true);
+        gHaptic('tap');
+      }
+      return;
+    }
+  }
+  gSnapRtIdx = null;
+  if (locLock || gAimActive()) { gSnapMk = null; gSnapTrk = null; return; }
   let best = null, bestD = 26;
   for (const m of MK) {
     const mp = map.latLngToContainerPoint(L.latLng(m.lat, m.lng));
@@ -2674,7 +2851,7 @@ function trkCard(t) {
     '<button class="gray" onclick="trkHideMap()">Sakrij s mape</button>' +
     (t.id ? '<button class="red" onclick="trkDelAsk(\'' + t.id + '\')">Obriši stazu</button>' : '') + '</div>');
 }
-function trkHideMap() { trk.clearLayers(); curTrack = null; gSnapTrk = null; sheet(); info.innerHTML = ''; prof.style.display = 'none'; gUpdateCross(); gTickHud(); }
+function trkHideMap() { trk.clearLayers(); curTrack = null; gSnapTrk = null; gTrkClearUntil = 0; sheet(); info.innerHTML = ''; prof.style.display = 'none'; gUpdateCross(); gTickHud(); }
 function trkDelAsk(id) {
   const t = trackCache[id] || curTrack; if (!t) return;
   sheet('<b>Obrisati stazu?</b><div class="kv">Želite li trajno obrisati stazu <b>„' + esc(t.name) + '“</b>?</div>' +
@@ -2687,10 +2864,12 @@ async function trkDelYes(id) {
 }
 function gUpdateCross() {
   const cr = $('gCross'), menuOpen = $('gMenu').classList.contains('on'), shOpen = $('sheet').style.display === 'block';
-  const show = !menuOpen && !shOpen && (!calOn || gObjPick) && (gAimActive() || !locLock);
+  const dockOpen = $('ip').style.display === 'block' && $('ip').classList.contains('route-dock');
+  const show = !menuOpen && !shOpen && !dockOpen && (!calOn || gObjPick) && (gAimActive() || !locLock);
+  const snapped = gSnapRtIdx !== null || (!gAimActive() && !!(gSnapMk || gSnapTrk));
   cr.classList.toggle('on', show);
-  cr.classList.toggle('aim', gAimActive());
-  cr.classList.toggle('snap', !gAimActive() && !!(gSnapMk || gSnapTrk));
+  cr.classList.toggle('aim', gAimActive() && gSnapRtIdx === null);
+  cr.classList.toggle('snap', snapped);
 }
 function gSheetItems() {
   if ($('sb').classList.contains('g-open') || $('sb').style.display === 'flex' || $('sb').style.display === 'block') return gSrItems();
@@ -2705,7 +2884,7 @@ function gSheetHighlight(delta = 0) {
   gSheetIdx = (gSheetIdx + delta + items.length) % items.length;
   const el = items[gSheetIdx];
   el.classList.add('gFocus');
-  const box = el.closest('#sheet, #sr');
+  const box = el.closest('#sheet, #sr, #ip');
   if (box) {
     const br = box.getBoundingClientRect(), er = el.getBoundingClientRect();
     if (er.top < br.top) box.scrollTop -= (br.top - er.top) + 6;
@@ -2717,7 +2896,9 @@ new MutationObserver(() => {
 }).observe($('sheet'), { childList: true, attributes: true, attributeFilter: ['style'] });
 new MutationObserver(() => {
   if ($('sheet').style.display !== 'block' && $('sb').style.display !== 'block') {
-    gSheetIdx = 0; setTimeout(() => gSheetHighlight(0), 25);
+    const keep = gRouteKeepFocus;
+    gSheetIdx = keep != null ? keep : 0;
+    setTimeout(() => { gSheetHighlight(0); if (gRouteKeepFocus === keep) gRouteKeepFocus = null; }, 25);
   }
 }).observe(info, { childList: true, subtree: true });
 new MutationObserver(() => {
@@ -2769,7 +2950,10 @@ function gSubItems(id) {
     ];
   }
   if (id === 'routes') return [
-    { t: rec ? 'Zaustavi snimanje' : 'Snimaj rutu', s: rec ? fmtD(stats(rec.pts).d) : 'Nova ruta', fn: () => { gMenuClose(); $('bRec').click(); } },
+    { t: rec ? 'Zaustavi snimanje' : 'Snimaj rutu', s: rec ? fmtD(stats(rec.pts).d) : 'Nova ruta', fn: () => {
+        if (rec) { gMenuClose(); $('bRec').click(); }
+        else { gMenuClose(true); recAskStart(); }
+      } },
     { t: 'Spremljene rute', s: 'Prati / GPX', fn: () => { gMenuClose(true); tracksOpen(); } },
     { t: 'Uvezi GPX fajl', s: 'Iz memorije', fn: () => { gMenuClose(); $('gpxIn').click(); } },
     { t: 'Dionica A→B po stazi', s: 'Krstić + OK', fn: () => { gMenuClose(); locLock = false; setMode('route'); info.innerHTML = ''; prof.style.display = 'none'; gUpdateCross(); gTickHud(); } },
@@ -2835,8 +3019,13 @@ function gMenuRender() {
 }
 function gMenuToggle(force) {
   const el = $('gMenu'), open = force == null ? !el.classList.contains('on') : !!force;
-  if (open) { gStack = []; gIdx = 0; gObjPick = false; sheet(); closeSearch(); if (calOn) calToggle(false); el.classList.add('on'); gMenuRender(); }
-  else { el.classList.remove('on'); }
+  if (open) {
+    gStack = []; gIdx = 0; gObjPick = false;
+    sheet(); closeSearch();
+    token++; info.innerHTML = ''; prof.style.display = 'none'; $('ip').style.display = 'none'; $('ip').classList.remove('route-dock');
+    if (calOn) calToggle(false);
+    el.classList.add('on'); gMenuRender();
+  } else { el.classList.remove('on'); }
   gUpdateCross();
 }
 function gMenuClose(keepReturn = false) {
@@ -2850,7 +3039,7 @@ function gMenuActivate() {
 }
 function gPanDir(sx, sy, fast = false) {
   locLock = false;
-  if (gSnapMk || gSnapTrk) { gSnapMk = null; gSnapTrk = null; gSnapCool = Date.now() + 450; }
+  if (gSnapMk || gSnapTrk || gSnapRtIdx !== null) { gSnapMk = null; gSnapTrk = null; gSnapRtIdx = null; gSnapCool = Date.now() + 450; }
   const z = map.getZoom();
   let step = gAimActive() ? (z >= 16 ? 14 : z >= 13 ? 22 : 32) : (z >= 16 ? 20 : z >= 13 ? 32 : 52);
   if (fast) step = Math.round(step * 2.6);
@@ -2864,6 +3053,10 @@ function gCrossLatLng() {
   return map.containerPointToLatLng(L.point(px + dys * Math.sin(mapAng), py + dys * Math.cos(mapAng)));
 }
 async function gPickCenter() {
+  if (gSnapRtIdx !== null && rPts[gSnapRtIdx]) {
+    routePtDelAsk(gSnapRtIdx);
+    return;
+  }
   const p = gCrossLatLng();
   if (gObjPick) {
     gObjPick = false;
@@ -2911,18 +3104,32 @@ function gKey(k, fast = false) {
       }
       return;
     }
-    if (info.textContent.trim()) { info.innerHTML = ''; prof.style.display = 'none'; gSheetHighlight(0); gTickHud(); return; }
-    if (pickCb) { pickCb = null; gUpdateCross(); gTickHud(); return; }
-    if (mode) { mode = null; Object.values(btns).forEach(b => b.classList.remove('active')); $('radRow').style.display = 'none'; gUpdateCross(); gTickHud(); return; }
-    if (!locLock || (!navT && tools.getLayers().length)) {
-      if (!navT && tools.getLayers().length) resetTools();
-      if (me) $('bLoc').click();
-      gUpdateCross(); gTickHud(); return;
+    if (info.textContent.trim()) {
+      info.innerHTML = ''; prof.style.display = 'none'; $('ip').classList.remove('route-dock');
+      gSheetHighlight(0); gUpdateCross(); gTickHud(); return;
     }
+    if (pickCb) { pickCb = null; gUpdateCross(); gTickHud(); return; }
+    if (mode) { mode = null; Object.values(btns).forEach(b => b.classList.remove('active')); $('radRow').style.display = 'none'; gSnapRtIdx = null; gUpdateCross(); gTickHud(); return; }
     if (navT) {
-      if (Date.now() < gNavExitUntil) { gNavExitUntil = 0; navStop(); gTickHud(); }
-      else { gNavExitUntil = Date.now() + 3000; gTickHud(); }
+      if (Date.now() < gNavExitUntil) {
+        gNavExitUntil = 0; navStop();
+        if (trk.getLayers().length) gTrkClearUntil = Date.now() + 3500;
+        gUpdateCross(); gTickHud();
+      } else { gNavExitUntil = Date.now() + 3500; gTickHud(); }
       return;
+    }
+    if (trk.getLayers().length) {
+      if (Date.now() < gTrkClearUntil) {
+        gTrkClearUntil = 0; trkHideMap();
+        if (me) { locLock = true; centerOnMe(map.getZoom(), true); }
+        gUpdateCross(); gTickHud();
+      } else { gTrkClearUntil = Date.now() + 3500; gTickHud(); }
+      return;
+    }
+    if (!locLock || tools.getLayers().length) {
+      if (tools.getLayers().length) resetTools();
+      if (me) { locLock = true; centerOnMe(map.getZoom(), true); }
+      gUpdateCross(); gTickHud(); return;
     }
     return;
   }
@@ -3027,7 +3234,8 @@ function gKey(k, fast = false) {
   else if (k === 'left') { gBeep(false); gPanDir(-1, 0, fast); }
   else if (k === 'right') { gBeep(false); gPanDir(1, 0, fast); }
   else if (k === 'ok') {
-    if (gAimActive()) { gBeep(true); gPickCenter(); }
+    if (gSnapRtIdx !== null && rPts[gSnapRtIdx]) { gBeep(true); routePtDelAsk(gSnapRtIdx); }
+    else if (gAimActive()) { gBeep(true); gPickCenter(); }
     else if (gSnapMk) { gBeep(true); markInfo(gSnapMk.id); }
     else if (gSnapTrk) { gBeep(true); trkCard(gSnapTrk); }
     else if (!oriOn && window.DeviceOrientationEvent && DeviceOrientationEvent.requestPermission) { gBeep(true); compassListen(); gTickHud(); }
@@ -3117,9 +3325,20 @@ function gTickHud() {
   if (Date.now() < gSosHintUntil) {
     st.classList.add('rec'); tag.textContent = 'SOS ZAŠTITA';
     txt.textContent = 'Drži SOS 1 sekundu za aktivaciju';
+  } else if (Date.now() < gNavExitUntil && navT) {
+    st.classList.add('rec'); tag.textContent = 'IZLAZ?';
+    txt.textContent = 'Pritisni NAZAD opet za prekid';
+  } else if (Date.now() < gTrkClearUntil && trk.getLayers().length) {
+    st.classList.add('rec'); tag.textContent = 'UKLONI?';
+    txt.textContent = 'Pritisni NAZAD opet za uklanjanje rute';
+  } else if (gSnapRtIdx !== null && rPts[gSnapRtIdx]) {
+    const lbl = String.fromCharCode(65 + (gSnapRtIdx % 26));
+    st.classList.remove('rec'); tag.textContent = 'TAČKA ' + lbl;
+    txt.textContent = fmtLL(rPts[gSnapRtIdx]) + ' · OK obriši tačku';
   } else if (gAimActive()) {
     const c = gCrossLatLng();
-    const tName = gObjPick ? 'OBJEKAT' : pickCb ? 'TAČKA' : ({ measure: 'MJERI', bearing: 'AZIMUT', elev: 'VISINA', radius: rCenter ? 'RADIUS → RUB' : 'RADIUS → CENTAR', route: rPts.length ? 'RUTA → B' : 'RUTA → A' }[mode] || 'KRSTIĆ');
+    const nextRt = 'RUTA → ' + String.fromCharCode(65 + (rPts.length % 26));
+    const tName = gObjPick ? 'OBJEKAT' : pickCb ? 'TAČKA' : ({ measure: 'MJERI', bearing: 'AZIMUT', elev: 'VISINA', radius: rCenter ? 'RADIUS → RUB' : 'RADIUS → CENTAR', route: nextRt }[mode] || 'KRSTIĆ');
     st.classList.remove('rec'); tag.textContent = tName;
     txt.textContent = (me ? fmtD(dist(me, c)) + ' · ' + brg(bearing(me, c)) : c.lat.toFixed(4) + ', ' + c.lng.toFixed(4)) + ' · OK / NAZAD';
   } else if (!locLock) {
@@ -3137,9 +3356,6 @@ function gTickHud() {
   } else if (rec) {
     st.classList.add('rec'); tag.textContent = rec.paused ? 'PAUZA' : 'SNIMA';
     txt.textContent = fmtD(stats(rec.pts).d) + ' · ' + fmtT(Date.now() - rec.t0);
-  } else if (Date.now() < gNavExitUntil && navT) {
-    st.classList.add('rec'); tag.textContent = 'IZLAZ?';
-    txt.textContent = 'Pritisni NAZAD opet za prekid';
   } else if (navT) {
     st.classList.remove('rec'); tag.textContent = navT.rt ? 'RUTA' : 'MARKER';
     txt.textContent = ($('navD').textContent || '—') + ' · ' + (navT.name || 'Cilj') + ' · 2×NAZAD izlaz';
