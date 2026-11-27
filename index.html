@@ -1221,10 +1221,19 @@ svg.leaflet-image-layer.leaflet-interactive path {
   .trkRow .trkAct2 { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
   .trkRow .trkAct2 button { padding: 6px 4px; font: 600 10.5px/1 system-ui; border-radius: 0 !important; }
 
-  /* Context menu highlights (Marker mode & Active Tool exit) */
+  /* Context menu highlights (Marker mode, Active Tool exit, SOS & thumb-slide) */
   .gItem.mkAct { border-left: 3px solid #7fb069 !important; background: rgba(127, 176, 105, .11) !important; }
   .gItem.toolExit { border-left: 3px solid #f0622b !important; background: rgba(240, 98, 43, .13) !important; }
   .gItem.toolExit span { color: #ffad87 !important; }
+  .gItem.sosAct { border-left: 3px solid #ef4444 !important; background: rgba(220, 38, 38, .15) !important; }
+  .gItem.sosAct span { color: #fecaca !important; font-weight: 700 !important; }
+  .gItem.slide-hot {
+    background: rgba(127, 176, 105, .26) !important;
+    border-color: #9ad67f !important;
+    box-shadow: inset 4px 0 0 #9ad67f !important;
+    transform: translateX(-3px);
+  }
+  .gItem { transition: transform .08s ease, background .08s ease; }
 
   /* Quick suggestions chips inside #sb (Touch mode) */
   #gQuickCats { display: none; flex-wrap: wrap; gap: 5px; margin: 7px 0 6px; }
@@ -1262,10 +1271,26 @@ svg.leaflet-image-layer.leaflet-interactive path {
   .tFab.ico { width: 42px; padding: 0; }
   .tFab.rot { border-color: #7fb069; color: #9ad67f; }
   .tFab.pri { background: #26362b; border-color: #7fb069; color: #fff; }
-  .tFab.okBtn { min-width: 44px; padding: 0 11px; background: rgba(34, 41, 37, .94); border-color: #a6b4ac; color: #fff; font-weight: 800; }
+  .tFab.okBtn { min-width: 44px; padding: 0 11px; background: rgba(34, 41, 37, .94); border-color: #a6b4ac; color: #fff; font-weight: 800; touch-action: none; }
   .tFab.backBtn { display: none; width: 42px; padding: 0; background: rgba(153, 27, 27, .94); border-color: #ef4444; color: #fff; }
   #gTouchBar.has-back .tFab.backBtn { display: inline-flex; }
   #gTouchBar.has-back .tTipkeTxt { display: none; }
+  .tSosBtn {
+    display: none; position: absolute; top: 8px; right: 8px; z-index: 950;
+    height: 32px; padding: 0 11px; border-radius: 7px; overflow: hidden;
+    background: rgba(153, 27, 27, .92); color: #fff; border: 1.5px solid #ef4444;
+    box-shadow: 0 3px 10px rgba(0,0,0,.45);
+    font: 800 11px/1 system-ui, -apple-system, sans-serif; letter-spacing: .08em;
+    align-items: center; justify-content: center; gap: 4px;
+    cursor: pointer; user-select: none; -webkit-user-select: none; touch-action: none;
+  }
+  .tSosBtn::after {
+    content: ''; position: absolute; inset: 0; pointer-events: none;
+    background: rgba(255,255,255,.32); transform-origin: left center;
+    transform: scaleX(0); opacity: 0;
+  }
+  .tSosBtn.hold { box-shadow: 0 0 16px rgba(239, 68, 68, .9), inset 0 0 0 1.5px #fff; }
+  .tSosBtn.hold::after { opacity: 1; transform: scaleX(1); transition: transform 1s linear, opacity .06s; }
   .gMenuCloseBtn {
     display: none; padding: 4px 8px; border-radius: 2px; background: #2a2f32; color: #e2e6e3;
     border: 1px solid #42484c; font: 700 10.5px/1 system-ui; cursor: pointer;
@@ -1278,6 +1303,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
   body.g-touch #gScreen #gCross, body.g-touch #gScreen #sight, body.g-touch #gScreen #gScaleBar { pointer-events: none !important; }
   body.g-touch #gScreen #gTouchBar { display: flex !important; pointer-events: none !important; }
   body.g-touch #gScreen #gTouchBar .tbGrp { pointer-events: auto !important; }
+  body.g-touch #gScreen #tSosBtn.show { display: inline-flex !important; }
   body.g-touch #gScreen #sheet > .row:first-child { display: flex !important; }
   body.g-touch #gScreen #ip button.x, body.g-touch #gScreen #nav button.x, body.g-touch #gScreen #sb button.x {
     display: inline-flex !important; align-items: center; justify-content: center;
@@ -1297,7 +1323,17 @@ svg.leaflet-image-layer.leaflet-interactive path {
     border: 1px solid #464e52 !important; border-radius: 10px !important;
   }
   body.g-touch #gMenuHd .gMenuCloseBtn { display: inline-flex !important; }
+  body.g-touch #gMenuHd #gMenuBackBtn.hide { display: none !important; }
+  #gMenuFt { gap: 8px; align-items: center; }
+  #gMenuFt span:last-child { white-space: nowrap; flex: none; }
   body.g-touch #gMenu, body.g-touch #gScreen #sheet { bottom: calc(64px + var(--safe-b)) !important; }
+  body.g-touch #gMenuList { -webkit-overflow-scrolling: touch; touch-action: pan-y; user-select: none; -webkit-user-select: none; }
+  body.g-touch #gMenu.cross-menu {
+    top: auto !important; bottom: calc(64px + var(--safe-b)) !important;
+    max-height: calc(100% - 108px) !important;
+    border-top-left-radius: 10px !important;
+  }
+  body.g-touch #gMenu.cross-menu #gMenuList { touch-action: none !important; }
   body.g-touch #gStatus { bottom: calc(62px + var(--safe-b)) !important; }
   body.g-touch #gStatus.has-exit .stExit { display: inline-flex !important; }
   body.g-touch #gScreen #ip.route-dock { bottom: calc(62px + var(--safe-b)) !important; }
@@ -1332,6 +1368,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
 <div id="gScreen">
 <div id="map"></div>
 <div id="gScaleBar" aria-label="Razmjer karte"><div class="scTop"><span id="gScaleTxt">5 km</span><span class="scRat" id="gScaleRat">1:250 000</span></div><div class="scLine" id="gScaleLine"></div></div>
+<button id="tSosBtn" class="tSosBtn" aria-label="Hitno SOS (drži 1 sekundu)">SOS</button>
 <div id="gCross" aria-hidden="true"><svg viewBox="0 0 44 44">
   <circle cx="22" cy="22" r="5.5" fill="none" stroke="rgba(12,16,14,.88)" stroke-width="4.4"/>
   <path d="M22 3v11M22 30v11M3 22h11M30 22h11" stroke="rgba(12,16,14,.88)" stroke-width="4.4" stroke-linecap="round"/>
@@ -1369,8 +1406,8 @@ svg.leaflet-image-layer.leaflet-interactive path {
   </div>
   <div class="tbGrp">
     <button class="tFab backBtn" id="tBackBtn" onclick="gKey('back')" aria-label="Nazad / Izađi iz alata"><svg style="width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round" viewBox="0 0 24 24"><path d="M9.5 14L5 9.5L9.5 5"/><path d="M5.5 9.5h9a4.5 4.5 0 0 1 0 9h-5"/></svg></button>
-    <button class="tFab okBtn" id="tOkBtn" onclick="gKey('ok')" aria-label="Akcije za tačku pod krstićem">OK</button>
-    <button class="tFab pri" id="tMenuBtn" onclick="gMenuToggle()" aria-label="Otvori meni">MENU</button>
+    <button class="tFab okBtn" id="tOkBtn" onclick="if(Date.now()<gOkSlideBlockUntil)return;gKey('ok')" aria-label="Akcije za tačku pod krstićem">OK</button>
+    <button class="tFab pri" id="tMenuBtn" onclick="gMenuToggle()" aria-label="Otvori glavni meni">MENU</button>
   </div>
 </div>
 <div id="gMenu" aria-label="Terenski meni">
@@ -3408,7 +3445,7 @@ async function trkDelYes(id, backToList = false) {
   else { sheet(); info.innerHTML = ''; prof.style.display = 'none'; }
   gUpdateCross(); gTickHud();
 }
-let gMarkMode = false, gMarkDraftPaused = false;
+let gMarkMode = false, gMarkDraftPaused = false, gMenuSlideBlockUntil = 0, gOkSlideBlockUntil = 0;
 function gSyncTouchBar() {
   const tb = $('gTouchBar');
   const menuOpen = $('gMenu').classList.contains('on');
@@ -3420,6 +3457,8 @@ function gSyncTouchBar() {
   if (tb) tb.classList.toggle('has-back', canBack);
   const st = $('gStatus');
   if (st) st.classList.toggle('has-exit', gTouchMode && (hasTool || !!navT));
+  const tSos = $('tSosBtn');
+  if (tSos) tSos.classList.toggle('show', gTouchMode && !menuOpen && !shOpen && !sbOpen && !calOn);
 }
 function gUpdateCross() {
   const cr = $('gCross'), menuOpen = $('gMenu').classList.contains('on'), shOpen = $('sheet').style.display === 'block';
@@ -3529,7 +3568,8 @@ function gMainItems() {
     { t: 'Markeri', s: MK.length + ' tačaka', sub: 'marks' },
     { t: 'Rute i GPX', s: rec ? 'Snimanje aktivno' : 'Snimi / Uvezi', sub: 'routes' },
     { t: 'Kompas', s: (mapRot ? 'Po smjeru' : 'Po sjeveru') + (hdgOff ? ' · ' + fmtSign(hdgOff) : ''), sub: 'cal' },
-    { t: 'Alati i ekran', s: (gTouchMode ? 'Dodir' : 'Rukavice') + ' · ' + gLayers[gLayIdx].name, sub: 'tools' }
+    { t: 'Alati i ekran', s: (gTouchMode ? 'Dodir' : 'Rukavice') + ' · ' + gLayers[gLayIdx].name, sub: 'tools' },
+    { t: '🆘 Hitno SOS', s: 'GPS lokacija · Koordinate / SMS / 112', cls: 'sosAct', fn: () => { gMenuClose(); sosOpen(); } }
   );
   return list;
 }
@@ -3648,16 +3688,38 @@ function gCurMenu() {
   const top = gStack[gStack.length - 1];
   return { title: top.title, items: gSubItems(top.id) };
 }
-function gMenuTap(i) { gIdx = i; gBeep(true); gMenuActivate(); }
+function gMenuTap(i) {
+  if (Date.now() < gMenuSlideBlockUntil) return;
+  gIdx = i; gBeep(true); gMenuActivate();
+}
+function gMenuSetSlideIdx(idx) {
+  const list = $('gMenuList'); if (!list) return;
+  const rows = list.querySelectorAll('.gItem');
+  rows.forEach((el, i) => {
+    const active = i === idx;
+    el.classList.toggle('sel', active);
+    el.classList.toggle('slide-hot', active);
+  });
+  if (idx >= 0 && idx < rows.length) {
+    if (gIdx !== idx) { gIdx = idx; gBeep(false); }
+    $('gMenuPos').textContent = (idx + 1) + '/' + rows.length;
+  }
+}
 function gMenuRender() {
-  const m = gCurMenu(), list = $('gMenuList');
+  const m = gCurMenu(), list = $('gMenuList'), menuEl = $('gMenu');
   if (gIdx >= m.items.length) gIdx = Math.max(0, m.items.length - 1);
+  const isCross = gStack.length > 0 && gStack[gStack.length - 1].id === 'cross';
+  if (menuEl) menuEl.classList.toggle('cross-menu', isCross);
   $('gMenuTitle').textContent = m.title;
   $('gMenuPos').textContent = (gIdx + 1) + '/' + m.items.length;
-  if ($('gMenuBackBtn')) $('gMenuBackBtn').style.display = gStack.length ? '' : 'none';
-  if ($('gMenuFt')) $('gMenuFt').innerHTML = gTouchMode ? '<span>Dodirni stavku za izbor</span><span>✕ Zatvori</span>' : '<span>▲▼ Izbor · OK Potvrdi</span><span>NAZAD Izlaz</span>';
+  if ($('gMenuBackBtn')) $('gMenuBackBtn').classList.toggle('hide', !gStack.length);
+  if ($('gMenuFt')) {
+    $('gMenuFt').innerHTML = gTouchMode
+      ? (isCross ? '<span>Klizi prstom · Pusti za izbor</span><span>MENU → Glavni</span>' : '<span>Klizi ili dodirni · Povuci desno izlaz</span><span>✕ Zatvori</span>')
+      : '<span>▲▼ Izbor · OK Potvrdi</span><span>NAZAD Izlaz</span>';
+  }
   list.innerHTML = m.items.map((it, i) =>
-    '<div class="gItem' + (it.cls ? ' ' + it.cls : '') + (i === gIdx ? ' sel' : '') + '" onclick="gMenuTap(' + i + ')"><span>' + it.t + '</span><small>' + (it.s || '') + '</small></div>'
+    '<div class="gItem' + (it.cls ? ' ' + it.cls : '') + (i === gIdx ? ' sel' : '') + '" data-idx="' + i + '" onclick="gMenuTap(' + i + ')"><span>' + it.t + '</span><small>' + (it.s || '') + '</small></div>'
   ).join('');
   const sel = list.querySelector('.gItem.sel');
   if (sel) {
@@ -3667,7 +3729,15 @@ function gMenuRender() {
   }
 }
 function gMenuToggle(force) {
-  const el = $('gMenu'), open = force == null ? !el.classList.contains('on') : !!force;
+  const el = $('gMenu');
+  if (force == null) {
+    const act = HikeMath.resolveMenuButtonAction(el.classList.contains('on'), gStack.length);
+    if (act === 'return_main') {
+      gStack = []; gIdx = 0; gMenuRender(); gUpdateCross(); return;
+    }
+    force = act === 'open_main';
+  }
+  const open = !!force;
   if (open) {
     if ($('sheet').style.display === 'block' && $('mkC') && mkDraft) {
       mkDraft.name = $('mkN') ? $('mkN').value : mkDraft.name;
@@ -3679,12 +3749,12 @@ function gMenuToggle(force) {
     token++; info.innerHTML = ''; prof.style.display = 'none'; $('ip').style.display = 'none'; $('ip').classList.remove('route-dock');
     if (calOn) calToggle(false);
     el.classList.add('on'); gMenuRender();
-  } else { el.classList.remove('on'); }
+  } else { el.classList.remove('on'); el.classList.remove('cross-menu'); gStack = []; }
   gUpdateCross();
 }
 function gMenuClose(keepReturn = false) {
   gReturnMenu = keepReturn && gStack.length ? { stack: gStack.map(x => ({ ...x })), idx: gIdx } : null;
-  $('gMenu').classList.remove('on'); gStack = []; gUpdateCross();
+  $('gMenu').classList.remove('on'); $('gMenu').classList.remove('cross-menu'); gStack = []; gUpdateCross();
 }
 function gMenuActivate() {
   const it = gCurMenu().items[gIdx]; if (!it) return;
@@ -4055,6 +4125,136 @@ function gKey(k, fast = false) {
     btn.addEventListener('mouseup', stopRep);
     btn.addEventListener('mouseleave', stopRep);
   });
+
+  // One-handed thumb-slide inside #gMenuList (slide over items + release to pick, swipe right to close)
+  const menuEl = $('gMenu'), listEl = $('gMenuList');
+  if (menuEl && listEl) {
+    const itemIdxAt = (x, y) => {
+      const hit = document.elementFromPoint(x, y);
+      const row = hit && hit.closest ? hit.closest('#gMenuList .gItem') : null;
+      return row && row.dataset.idx != null ? Number(row.dataset.idx) : -1;
+    };
+    let st = null;
+    listEl.addEventListener('pointerdown', e => {
+      if (!gTouchMode || !menuEl.classList.contains('on')) return;
+      const isCross = menuEl.classList.contains('cross-menu');
+      const scrollable = !isCross && (listEl.scrollHeight > listEl.clientHeight + 4);
+      const idx = itemIdxAt(e.clientX, e.clientY);
+      st = { id: e.pointerId, x0: e.clientX, y0: e.clientY, dx: 0, dy: 0, moved: false, scrollable, idx };
+      if (!scrollable && idx >= 0) gMenuSetSlideIdx(idx);
+    });
+    window.addEventListener('pointermove', e => {
+      if (!st || e.pointerId !== st.id) return;
+      st.dx = e.clientX - st.x0;
+      st.dy = e.clientY - st.y0;
+      if (Math.hypot(st.dx, st.dy) > 7) st.moved = true;
+      if (!st.scrollable) {
+        const idx = itemIdxAt(e.clientX, e.clientY);
+        st.idx = idx;
+        gMenuSetSlideIdx(idx);
+      }
+    });
+    const finishMenuSlide = e => {
+      if (!st || e.pointerId !== st.id) return;
+      const cur = st; st = null;
+      listEl.querySelectorAll('.gItem.slide-hot').forEach(el => el.classList.remove('slide-hot'));
+      if (e.type === 'pointercancel') return;
+      const res = HikeMath.resolveMenuSlideRelease({
+        dx: cur.dx, dy: cur.dy, hoveredIdx: cur.idx, scrollable: cur.scrollable, moved: cur.moved
+      });
+      if (res.action === 'close') {
+        gMenuSlideBlockUntil = Date.now() + 420;
+        gKey('back');
+      } else if (res.action === 'select' && cur.moved) {
+        gMenuSlideBlockUntil = Date.now() + 420;
+        gIdx = res.idx; gBeep(true); gMenuActivate();
+      }
+    };
+    window.addEventListener('pointerup', finishMenuSlide);
+    window.addEventListener('pointercancel', finishMenuSlide);
+
+    // One-handed press & slide straight UP from the OK button in Touch Mode
+    const okBtn = $('tOkBtn');
+    if (okBtn) {
+      let okSt = null;
+      const openFromOk = () => {
+        if (!okSt || okSt.opened) return;
+        okSt.opened = true;
+        gBeep(true);
+        gOpenCrossMenu();
+      };
+      okBtn.addEventListener('pointerdown', e => {
+        if (!gTouchMode || menuEl.classList.contains('on') || gAimActive() || $('sheet').style.display === 'block' || $('sb').classList.contains('g-open')) return;
+        okSt = { id: e.pointerId, x0: e.clientX, y0: e.clientY, opened: false, idx: -1, leftOk: false, t: 0 };
+        okSt.t = setTimeout(openFromOk, 150);
+      });
+      window.addEventListener('pointermove', e => {
+        if (!okSt || e.pointerId !== okSt.id) return;
+        const dy = e.clientY - okSt.y0;
+        if (dy < -10 && !okSt.opened) { clearTimeout(okSt.t); openFromOk(); }
+        if (okSt.opened) {
+          const hit = document.elementFromPoint(e.clientX, e.clientY);
+          const onOk = hit && hit.closest && hit.closest('#tOkBtn');
+          if (!onOk) okSt.leftOk = true;
+          const idx = itemIdxAt(e.clientX, e.clientY);
+          okSt.idx = idx;
+          gMenuSetSlideIdx(idx);
+        }
+      });
+      const finishOkSlide = e => {
+        if (!okSt || e.pointerId !== okSt.id) return;
+        const cur = okSt; okSt = null;
+        clearTimeout(cur.t);
+        listEl.querySelectorAll('.gItem.slide-hot').forEach(el => el.classList.remove('slide-hot'));
+        if (!cur.opened) return;
+        gOkSlideBlockUntil = Date.now() + 450;
+        if (e.type === 'pointercancel') return;
+        if (cur.idx >= 0) {
+          gIdx = cur.idx; gBeep(true); gMenuActivate();
+        } else if (cur.leftOk) {
+          // Slid off the menu without landing on an item -> cancel cleanly
+          gMenuClose();
+        }
+      };
+      window.addEventListener('pointerup', finishOkSlide);
+      window.addEventListener('pointercancel', finishOkSlide);
+    }
+  }
+
+  // Touch Mode hold-1s SOS button (top-right, same accidental-tap protection as deck SOS)
+  const tSos = $('tSosBtn');
+  if (tSos) {
+    let tsT = 0, tsLong = false, tsDown = false;
+    const cancelTS = (showHint = false) => {
+      clearTimeout(tsT); tsT = 0;
+      tSos.classList.remove('hold');
+      if (tsDown && !tsLong && showHint) {
+        gBeep(false);
+        gSosHintUntil = Date.now() + 2600;
+        gTickHud();
+      }
+      tsDown = false;
+      if (tsLong) setTimeout(() => { tsLong = false; }, 350);
+    };
+    const startTS = () => {
+      clearTimeout(tsT); tsT = 0; tsLong = false; tsDown = true;
+      tSos.classList.add('hold');
+      gSosHintUntil = Date.now() + 1800;
+      gTickHud();
+      tsT = setTimeout(() => {
+        tsLong = true; tsDown = false; tsT = 0;
+        tSos.classList.remove('hold');
+        gSosHintUntil = 0;
+        gKey('sos');
+        gTickHud();
+      }, 1000);
+    };
+    tSos.addEventListener('pointerdown', e => { e.stopPropagation(); startTS(); });
+    tSos.addEventListener('pointerup', () => cancelTS(true));
+    tSos.addEventListener('pointercancel', () => cancelTS(false));
+    tSos.addEventListener('pointerleave', () => cancelTS(false));
+    tSos.addEventListener('click', e => { e.stopPropagation(); e.preventDefault(); });
+  }
 })();
 
 addEventListener('keydown', e => {

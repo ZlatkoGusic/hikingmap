@@ -1,4 +1,4 @@
-const C = 'hike-v10';
+const C = 'hike-v11';
 self.addEventListener('install', e => { e.waitUntil(caches.open(C).then(c => Promise.all(['./', 'index.html', 'hike-math.js'].map(u => c.add(u).catch(() => {}))))); self.skipWaiting(); });
 self.addEventListener('activate', e => e.waitUntil(clients.claim()));
 self.addEventListener('fetch', e => {

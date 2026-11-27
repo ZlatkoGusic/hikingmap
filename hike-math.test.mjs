@@ -89,3 +89,38 @@ test('getActiveToolLabel returns consistent Bosnian labels for active tools', ()
   assert.equal(HikeMath.getActiveToolLabel({ pickCb: true }), 'Odabir tačke');
   assert.equal(HikeMath.getActiveToolLabel({ calOn: true }), 'Kalibracija');
 });
+
+test('resolveMenuButtonAction returns to main menu from submenus like OK cross menu', () => {
+  assert.equal(HikeMath.resolveMenuButtonAction(false, 0), 'open_main');
+  assert.equal(HikeMath.resolveMenuButtonAction(true, 1), 'return_main');
+  assert.equal(HikeMath.resolveMenuButtonAction(true, 2), 'return_main');
+  assert.equal(HikeMath.resolveMenuButtonAction(true, 0), 'close');
+});
+
+test('resolveMenuSlideRelease supports one-handed slide-to-select, swipe-close, and safe scrolling', () => {
+  // Slide vertically over non-scrolling OK menu and release on item 3
+  assert.deepEqual(
+    HikeMath.resolveMenuSlideRelease({ dx: 6, dy: -110, hoveredIdx: 3, scrollable: false, moved: true }),
+    { action: 'select', idx: 3 }
+  );
+  // Slide off the left edge of the menu -> cancel safely
+  assert.deepEqual(
+    HikeMath.resolveMenuSlideRelease({ dx: -120, dy: -20, hoveredIdx: -1, scrollable: false, moved: true }),
+    { action: 'none' }
+  );
+  // Swipe right to dismiss menu
+  assert.deepEqual(
+    HikeMath.resolveMenuSlideRelease({ dx: 88, dy: 12, hoveredIdx: 2, scrollable: false, moved: true }),
+    { action: 'close' }
+  );
+  // Vertical scroll on tall scrollable menu should NOT accidentally select an item
+  assert.deepEqual(
+    HikeMath.resolveMenuSlideRelease({ dx: 2, dy: -90, hoveredIdx: 4, scrollable: true, moved: true }),
+    { action: 'none' }
+  );
+  // Direct tap on tall scrollable menu selects item
+  assert.deepEqual(
+    HikeMath.resolveMenuSlideRelease({ dx: 1, dy: 2, hoveredIdx: 4, scrollable: true, moved: false }),
+    { action: 'select', idx: 4 }
+  );
+});

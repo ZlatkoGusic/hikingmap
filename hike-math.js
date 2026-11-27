@@ -148,6 +148,35 @@
     return (state.mode && map[state.mode]) || null;
   }
 
+  /**
+   * Resolves what pressing MENU should do given current menu visibility and submenu depth.
+   * When on a submenu (e.g. OK quick menu), MENU returns to the Main Menu instead of closing.
+   */
+  function resolveMenuButtonAction(isMenuOpen, stackDepth) {
+    if (!isMenuOpen) return 'open_main';
+    if (Number(stackDepth) > 0) return 'return_main';
+    return 'close';
+  }
+
+  /**
+   * Resolves pointer/touch release on the one-handed slide menu.
+   */
+  function resolveMenuSlideRelease(opts) {
+    const dx = Number(opts && opts.dx) || 0;
+    const dy = Number(opts && opts.dy) || 0;
+    const hoveredIdx = opts && typeof opts.hoveredIdx === 'number' ? opts.hoveredIdx : -1;
+    const scrollable = Boolean(opts && opts.scrollable);
+    const moved = Boolean(opts && opts.moved);
+
+    if (dx > 64 && Math.abs(dx) > Math.abs(dy) * 1.35) {
+      return { action: 'close' };
+    }
+    if (hoveredIdx >= 0 && (!scrollable || !moved)) {
+      return { action: 'select', idx: hoveredIdx };
+    }
+    return { action: 'none' };
+  }
+
   return {
     ROUTE_PROFILES,
     getRouteProfile,
@@ -157,6 +186,8 @@
     calcScaleBar,
     formatSosText,
     estimateTileCount,
-    getActiveToolLabel
+    getActiveToolLabel,
+    resolveMenuButtonAction,
+    resolveMenuSlideRelease
   };
 });
