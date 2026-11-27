@@ -35,6 +35,14 @@ test('Express static server routes', async (t) => {
     assert.match(body, /caches\.open/);
   });
 
+  await t.test('GET /hike-math.js serves pure logic helper script', async () => {
+    const res = await fetch(`${baseUrl}/hike-math.js`);
+    assert.equal(res.status, 200);
+    assert.match(res.headers.get('content-type') || '', /javascript/);
+    const body = await res.text();
+    assert.match(body, /calcRouteEtaMs/);
+  });
+
   await t.test('server source and package files are not exposed', async () => {
     const serverRes = await fetch(`${baseUrl}/server.js`);
     assert.equal(serverRes.status, 404);

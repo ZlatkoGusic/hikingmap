@@ -16,6 +16,12 @@ export function createApp() {
     res.sendFile(path.join(__dirname, 'sw.js'));
   });
 
+  app.get('/hike-math.js', (_req, res) => {
+    res.setHeader('Cache-Control', 'no-cache');
+    res.type('application/javascript');
+    res.sendFile(path.join(__dirname, 'hike-math.js'));
+  });
+
   app.get(['/', '/index.html'], (_req, res) => {
     res.setHeader('Cache-Control', 'no-cache');
     res.sendFile(path.join(__dirname, 'index.html'));
