@@ -1,6 +1,6 @@
-const C = 'hike-v11';
+const C = 'hike-v15';
 self.addEventListener('install', e => { e.waitUntil(caches.open(C).then(c => Promise.all(['./', 'index.html', 'hike-math.js'].map(u => c.add(u).catch(() => {}))))); self.skipWaiting(); });
-self.addEventListener('activate', e => e.waitUntil(clients.claim()));
+self.addEventListener('activate', e => e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k !== C).map(k => caches.delete(k)))).then(() => clients.claim())));
 self.addEventListener('fetch', e => {
   if (new URL(e.request.url).origin !== location.origin) return;
   e.respondWith(fetch(e.request).then(r => { const cp = r.clone(); caches.open(C).then(c => c.put(e.request, cp)); return r; }).catch(() => caches.match(e.request)));

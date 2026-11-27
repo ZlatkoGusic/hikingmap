@@ -159,6 +159,17 @@
   }
 
   /**
+   * Resolves what pressing BACK should do inside an open menu.
+   * From the OK quick menu (top-level 'cross' stack), BACK closes the menu directly
+   * back to the map instead of falling into the Main Menu.
+   */
+  function resolveMenuBackAction(stack) {
+    if (!Array.isArray(stack) || stack.length === 0) return 'close';
+    if (stack.length === 1 && stack[0] && stack[0].id === 'cross') return 'close';
+    return 'pop';
+  }
+
+  /**
    * Resolves pointer/touch release on the one-handed slide menu.
    */
   function resolveMenuSlideRelease(opts) {
@@ -177,6 +188,94 @@
     return { action: 'none' };
   }
 
+  /**
+   * Builds a direct straight-line offline fallback segment between two coordinates
+   * with accurate Haversine distance and profile-appropriate ETA.
+   */
+  function buildDirectSegment(a, b, profile) {
+    const rad = d => (d * Math.PI) / 180;
+    const R = 6371000;
+    const dLat = rad(b.lat - a.lat);
+    const dLng = rad(b.lng - a.lng);
+    const s1 = Math.sin(dLat / 2);
+    const s2 = Math.sin(dLng / 2);
+    const h = s1 * s1 + Math.cos(rad(a.lat)) * Math.cos(rad(b.lat)) * s2 * s2;
+    const d = 2 * R * Math.atan2(Math.sqrt(h), Math.sqrt(Math.max(0, 1 - h)));
+    const pf = profile || 'trail';
+    const ms = calcRouteEtaMs({ distanceM: d, ascentM: 0, profile: pf });
+    return {
+      pts: [
+        { lat: a.lat, lng: a.lng, alt: a.alt != null ? a.alt : null },
+        { lat: b.lat, lng: b.lng, alt: b.alt != null ? b.alt : null }
+      ],
+      d,
+      up: 0,
+      dn: 0,
+      durSec: pf === 'car' ? Math.round(ms / 1000) : null,
+      ms,
+      prof: pf,
+      direct: true
+    };
+  }
+
+  /**
+   * Determines whether the app should keep Screen Wake Lock active.
+   * Always holds Wake Lock while visible if keepAwake is enabled, OR whenever
+   * recording, live navigation, or A->B route tracking is active.
+   */
+  function shouldHoldWakeLock(state) {
+    if (!state || !state.isVisible) return false;
+    return Boolean(state.keepAwake || state.isRecording || state.isNavigating || state.isRouting);
+  }
+
+  /**
+   * Sanitizes elevation samples and computes Y-axis scaling and normalized plot points
+   * so elevation charts are never squashed by null/NaN values or cramped heights.
+   */
+  function computeElevationProfile(rawElev, opts) {
+    if (!Array.isArray(rawElev)) return null;
+    const values = [];
+    for (let i = 0; i < rawElev.length; i++) {
+      const v = rawElev[i];
+      if (v === null || v === undefined || v === '') continue;
+      const n = Number(v);
+      if (Number.isFinite(n)) values.push(n);
+    }
+    if (values.length < 2) return null;
+
+    let min = Infinity;
+    let max = -Infinity;
+    let maxIdx = 0;
+    for (let i = 0; i < values.length; i++) {
+      if (values[i] < min) min = values[i];
+      if (values[i] > max) {
+        max = values[i];
+        maxIdx = i;
+      }
+    }
+    const rawSpan = max - min;
+    const minSpan = (opts && Number(opts.minSpan)) || 20;
+    let yMin;
+    let yMax;
+    if (rawSpan < minSpan) {
+      const mid = (min + max) / 2;
+      yMin = Math.floor(mid - minSpan / 2);
+      yMax = Math.ceil(mid + minSpan / 2);
+    } else {
+      const pad = Math.max(4, rawSpan * 0.08);
+      yMin = Math.floor(min - pad);
+      yMax = Math.ceil(max + pad);
+    }
+    const ySpan = Math.max(1, yMax - yMin);
+    const yMid = Math.round((yMin + yMax) / 2);
+    const points = values.map((v, i) => ({
+      xNorm: i / (values.length - 1),
+      yNorm: (v - yMin) / ySpan,
+      elev: v
+    }));
+    return { values, min, max, maxIdx, yMin, yMid, yMax, ySpan, points };
+  }
+
   return {
     ROUTE_PROFILES,
     getRouteProfile,
@@ -188,6 +287,10 @@
     estimateTileCount,
     getActiveToolLabel,
     resolveMenuButtonAction,
-    resolveMenuSlideRelease
+    resolveMenuBackAction,
+    resolveMenuSlideRelease,
+    buildDirectSegment,
+    shouldHoldWakeLock,
+    computeElevationProfile
   };
 });

@@ -97,6 +97,16 @@ test('resolveMenuButtonAction returns to main menu from submenus like OK cross m
   assert.equal(HikeMath.resolveMenuButtonAction(true, 0), 'close');
 });
 
+test('resolveMenuBackAction closes OK quick menu directly instead of entering main menu', () => {
+  assert.equal(HikeMath.resolveMenuBackAction([]), 'close');
+  assert.equal(HikeMath.resolveMenuBackAction([{ id: 'cross', title: 'TAČKA POD KRSTIĆEM' }]), 'close');
+  assert.equal(HikeMath.resolveMenuBackAction([{ id: 'measure', title: 'Mjerenje' }]), 'pop');
+  assert.equal(
+    HikeMath.resolveMenuBackAction([{ id: 'cross' }, { id: 'marks' }]),
+    'pop'
+  );
+});
+
 test('resolveMenuSlideRelease supports one-handed slide-to-select, swipe-close, and safe scrolling', () => {
   // Slide vertically over non-scrolling OK menu and release on item 3
   assert.deepEqual(
@@ -123,4 +133,58 @@ test('resolveMenuSlideRelease supports one-handed slide-to-select, swipe-close, 
     HikeMath.resolveMenuSlideRelease({ dx: 1, dy: 2, hoveredIdx: 4, scrollable: true, moved: false }),
     { action: 'select', idx: 4 }
   );
+});
+
+test('buildDirectSegment computes offline straight-line distance and ETA fallback', () => {
+  const seg = HikeMath.buildDirectSegment(
+    { lat: 43.8563, lng: 18.4131 },
+    { lat: 43.8663, lng: 18.4131 },
+    'trail'
+  );
+  assert.equal(seg.direct, true);
+  assert.equal(seg.pts.length, 2);
+  // ~1.11 km north
+  assert.ok(seg.d > 1050 && seg.d < 1160);
+  assert.ok(seg.ms > 10 * 60000 && seg.ms < 20 * 60000);
+
+  const carSeg = HikeMath.buildDirectSegment(
+    { lat: 43.8563, lng: 18.4131 },
+    { lat: 43.9563, lng: 18.4131 },
+    'car'
+  );
+  assert.equal(carSeg.direct, true);
+  assert.ok(carSeg.durSec > 600 && carSeg.durSec < 900);
+});
+
+test('shouldHoldWakeLock keeps screen awake during active app use and A->B tracking', () => {
+  assert.equal(HikeMath.shouldHoldWakeLock({ isVisible: false, keepAwake: true }), false);
+  assert.equal(HikeMath.shouldHoldWakeLock({ isVisible: true, keepAwake: true }), true);
+  assert.equal(HikeMath.shouldHoldWakeLock({ isVisible: true, keepAwake: false, isRouting: true }), true);
+  assert.equal(HikeMath.shouldHoldWakeLock({ isVisible: true, keepAwake: false, isNavigating: true }), true);
+  assert.equal(HikeMath.shouldHoldWakeLock({ isVisible: true, keepAwake: false, isRecording: true }), true);
+  assert.equal(HikeMath.shouldHoldWakeLock({ isVisible: true, keepAwake: false }), false);
+});
+
+test('computeElevationProfile filters invalid nulls and prevents squashed vertical scaling', () => {
+  // Missing null/NaN samples must NOT drag baseline down to 0 m
+  const climb = HikeMath.computeElevationProfile([null, 1120, 1240, undefined, 1629, NaN, 1380]);
+  assert.ok(climb);
+  assert.equal(climb.values.length, 4);
+  assert.equal(climb.min, 1120);
+  assert.equal(climb.max, 1629);
+  assert.equal(climb.maxIdx, 2);
+  assert.ok(climb.yMin > 1000 && climb.yMin < 1120);
+  assert.ok(climb.yMax > 1629 && climb.yMax < 1720);
+  // Real climb should occupy ~85% of chart height (not squashed into top sliver)
+  const ys = climb.points.map(p => p.yNorm);
+  const verticalUsage = Math.max(...ys) - Math.min(...ys);
+  assert.ok(verticalUsage > 0.78 && verticalUsage < 0.94);
+
+  // Flat terrain uses minSpan so 2m GPS jitter is not wildly exaggerated
+  const flat = HikeMath.computeElevationProfile([510, 511, 512, 511]);
+  assert.ok(flat);
+  assert.ok(flat.yMax - flat.yMin >= 20);
+
+  // Fewer than 2 valid samples returns null safely
+  assert.equal(HikeMath.computeElevationProfile([null, 500, undefined]), null);
 });

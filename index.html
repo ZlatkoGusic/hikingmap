@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="manifest" href="data:application/manifest+json;charset=utf-8,%7B%22name%22%3A%20%22Planinarska%20karta%22%2C%20%22short_name%22%3A%20%22Karta%22%2C%20%22display%22%3A%20%22standalone%22%2C%20%22orientation%22%3A%20%22portrait%22%2C%20%22background_color%22%3A%20%22%23181a1b%22%2C%20%22theme_color%22%3A%20%22%23181a1b%22%7D">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 128 128'%3E%3Crect width='128' height='128' rx='26' fill='%231b2a21'/%3E%3Cpath d='M16 98L48 44l18 28 16-22 30 48z' fill='%234f7d58'/%3E%3Cpath d='M48 44l10 16-6 4-4-7-5 6-5-3z' fill='%23e8f0ea'/%3E%3Ccircle cx='92' cy='34' r='16' fill='%23181a1b' stroke='%239ad67f' stroke-width='4'/%3E%3Cpath d='M92 22l5 12h-10z' fill='%23ef4444'/%3E%3Cpath d='M92 46l5-12h-10z' fill='%23d1d5db'/%3E%3C/svg%3E">
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'%3E%3Crect width='180' height='180' fill='%231b2a21'/%3E%3Cpath d='M22 140L68 62l26 40 22-32 42 70z' fill='%234f7d58'/%3E%3Cpath d='M68 62l14 23-8 6-6-10-7 9-7-5z' fill='%23e8f0ea'/%3E%3Ccircle cx='130' cy='48' r='22' fill='%23181a1b' stroke='%239ad67f' stroke-width='5'/%3E%3Cpath d='M130 31l7 17h-14z' fill='%23ef4444'/%3E%3Cpath d='M130 65l7-17h-14z' fill='%23d1d5db'/%3E%3C/svg%3E">
 <title>Hiking mapa</title>
 <style>/* required styles */
 
@@ -700,7 +702,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
   #ip button.x { float: right; margin-left: 6px; }
   #info { max-height: 24vh; overflow-y: auto; line-height: 1.5; } .big { font-size: 17px; color: var(--pine); }
   #info button { margin: 4px 4px 0 0; }
-  #prof { width: 100%; height: 80px; display: none; margin-top: 4px; }
+  #prof { width: 100%; height: 96px; display: none; margin-top: 6px; border-radius: 4px; }
   .row { display: flex; gap: 6px; align-items: center; margin: 4px 0; flex-wrap: wrap; }
   .item { display: flex; justify-content: space-between; gap: 6px; align-items: center; padding: 7px 0; border-bottom: 1px solid var(--line); }
   .lbl { background: none; border: 0; box-shadow: none; padding: 0; }
@@ -779,7 +781,8 @@ svg.leaflet-image-layer.leaflet-interactive path {
   #gScreen #calTrack i.m15 { background: #f2f4f2; }
   #gScreen #calBar .actM button, #gScreen #bRst { background: #2b2f31; color: #ecefe9; border: 1px solid #3e4447; }
   #gStatus { position: absolute; left: 8px; right: 8px; bottom: 8px; z-index: 980; display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 12px; border-radius: 10px; background: rgba(20,22,23,.92); color: #f2f4f2; border: 1px solid #34393b; font: 700 12.5px/1.2 system-ui, -apple-system, sans-serif; font-variant-numeric: tabular-nums; box-shadow: 0 3px 10px rgba(0,0,0,.35); pointer-events: auto; cursor: pointer; }
-  #gStatus .tag { color: #8ec974; letter-spacing: .04em; text-transform: uppercase; font-size: 11px; }
+  #gStatus .tag { flex: none; white-space: nowrap; color: #8ec974; letter-spacing: .04em; text-transform: uppercase; font-size: 11px; }
+  #gStatTxt { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   #gStatus.rec .tag { color: #ff6b57; }
   #gMenu { display: none; position: absolute; inset: 0; z-index: 1130; background: rgba(18,20,21,.96); color: #ecefe9; flex-direction: column; }
   #gMenu.on { display: flex; }
@@ -808,6 +811,8 @@ svg.leaflet-image-layer.leaflet-interactive path {
     user-select: none; -webkit-user-select: none; touch-action: manipulation;
   }
   @media (max-width: 374px) {
+    #gTop { padding-left: 10px; padding-right: 10px; gap: 6px; font-size: 11.5px; }
+    #gTop .mid { gap: 6px; font-size: 12px; }
     #gDeck { padding-left: 10px; padding-right: 10px; gap: 6px; grid-template-columns: 76px 1fr 78px; }
   }
   /* Side grip ribs */
@@ -971,7 +976,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
 
   #gMenu {
     left: auto !important; right: 0 !important; top: 8px !important; bottom: 44px !important;
-    width: 66% !important; max-width: 268px !important;
+    width: min(76%, 272px) !important; max-width: 272px !important;
     border-radius: 0 !important;
     background: rgba(16, 18, 19, .95) !important;
     backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
@@ -981,11 +986,14 @@ svg.leaflet-image-layer.leaflet-interactive path {
     animation: gSlideIn .14s ease-out;
   }
   #gMenuHd {
-    padding: 8px 11px !important; background: rgba(255, 255, 255, .05);
+    gap: 6px;
+    padding: 8px 10px !important; background: rgba(255, 255, 255, .05);
     border-bottom: 1px solid #32373a !important;
-    color: #d4dad7 !important; font: 700 11px/1 ui-monospace, Menlo, monospace !important;
-    letter-spacing: .1em !important;
+    color: #d4dad7 !important; font: 700 11px/1.15 ui-monospace, Menlo, monospace !important;
+    letter-spacing: .08em !important;
   }
+  #gMenuTitle { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  #gMenuHd > div { flex: none; gap: 5px !important; white-space: nowrap; }
   #gMenuList { padding: 6px !important; gap: 4px !important; }
   .gItem {
     flex-direction: column; align-items: flex-start !important; gap: 2px;
@@ -1002,9 +1010,10 @@ svg.leaflet-image-layer.leaflet-interactive path {
   }
   .gItem.sel small { color: #d8dfdb !important; }
   #gMenuFt {
-    padding: 6px 10px !important; font: 600 10px/1 ui-monospace, Menlo, monospace !important;
+    padding: 6px 10px !important; font: 600 10px/1.1 ui-monospace, Menlo, monospace !important;
     color: #828c87 !important; border-top: 1px solid #2d3235 !important;
   }
+  #gMenuFt span:first-child { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
   #gScreen #sheet {
     left: auto !important; right: 0 !important; top: 42px !important; bottom: 44px !important;
@@ -1041,6 +1050,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
     font: 700 9.5px/1 ui-monospace, Menlo, monospace; letter-spacing: .12em;
   }
   #gScreen #ip button { margin-top: 6px; padding: 6px 8px; font-size: 11px; border-radius: 2px !important; }
+  #gScreen #ip .big { color: #9ad67f; font-weight: 700; }
 
   #gScreen #sb {
     left: auto !important; right: 0 !important; top: 42px !important;
@@ -1055,7 +1065,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
   #gScreen #sb input { border-radius: 0 !important; }
 
   #gScreen #nav {
-    left: auto !important; right: 0 !important; top: 8px !important; bottom: auto !important;
+    left: auto !important; right: 0 !important; top: 44px !important; bottom: auto !important;
     width: 72% !important; max-width: 272px !important;
     border-radius: 0 !important;
     background: rgba(16, 18, 19, .95) !important;
@@ -1069,7 +1079,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
   #gScreen #nav .big { font-size: 16px !important; }
   #gScreen #navB, #gScreen #navE, #gScreen #navN { font-size: 11px !important; }
   body.nav-on #gScreen #calPill { display: none !important; }
-  body.nav-on #gScreen #ip { top: 108px !important; bottom: auto !important; max-height: 48% !important; }
+  body.nav-on #gScreen #ip { top: 146px !important; bottom: auto !important; max-height: 44% !important; }
   .gFocus { outline: 2px solid #e6eae7 !important; outline-offset: 1px; box-shadow: none !important; background-color: #363c3f !important; color: #fff !important; }
 
   /* Built-in Hardware D-Pad Keyboard inside #sb (8 columns incl. Đ, Q, W, X, Y, -) */
@@ -1139,7 +1149,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
   /* Compact bottom dock for A→B route (3 trails + visible actions + clear map) */
   #gScreen #ip.route-dock {
     left: 0 !important; right: 0 !important; top: auto !important; bottom: 44px !important;
-    width: auto !important; max-width: none !important; max-height: 46% !important;
+    width: auto !important; max-width: none !important; max-height: 58% !important;
     border-left: 0 !important; border-right: 0 !important; border-bottom: 0 !important;
     border-top: 2px solid #f0622b !important;
     padding: 7px 9px 8px !important;
@@ -1148,11 +1158,11 @@ svg.leaflet-image-layer.leaflet-interactive path {
   }
   #gScreen #ip.route-dock::before { display: none !important; }
   #gScreen #ip.route-dock .x { display: none !important; }
-  #gScreen #ip.route-dock #prof { height: 42px !important; margin-top: 4px !important; }
+  #gScreen #ip.route-dock #prof { height: 82px !important; margin-top: 6px !important; border-radius: 3px; }
   .rtDock { display: flex; flex-direction: column; gap: 6px; }
   .rtHd { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
-  .rtHd .rtDist { font: 700 14.5px/1.1 ui-monospace, Menlo, monospace; color: #f6f8f7; }
-  .rtHd .rtMeta { font: 600 10.5px/1.1 ui-monospace, Menlo, monospace; color: #9aa49e; white-space: nowrap; }
+  .rtHd .rtDist { flex: none; white-space: nowrap; font: 700 14.5px/1.1 ui-monospace, Menlo, monospace; color: #f6f8f7; }
+  .rtHd .rtMeta { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: right; font: 600 10.5px/1.1 ui-monospace, Menlo, monospace; color: #9aa49e; }
   .rtStats { display: flex; flex-wrap: wrap; gap: 8px; font: 600 10.5px/1.2 ui-monospace, Menlo, monospace; color: #cfd6d2; }
   .rtStats b { color: #fff; }
   .rtAlts { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; }
@@ -1269,31 +1279,45 @@ svg.leaflet-image-layer.leaflet-interactive path {
   }
   .tFab:active { transform: scale(.95); background: #2c3134; }
   .tFab.ico { width: 42px; padding: 0; }
+  .tFab .icoH { display: none; }
   .tFab.rot { border-color: #7fb069; color: #9ad67f; }
+  .tFab.rot .icoN { display: none; }
+  .tFab.rot .icoH { display: block; }
   .tFab.pri { background: #26362b; border-color: #7fb069; color: #fff; }
   .tFab.okBtn { min-width: 44px; padding: 0 11px; background: rgba(34, 41, 37, .94); border-color: #a6b4ac; color: #fff; font-weight: 800; touch-action: none; }
   .tFab.backBtn { display: none; width: 42px; padding: 0; background: rgba(153, 27, 27, .94); border-color: #ef4444; color: #fff; }
   #gTouchBar.has-back .tFab.backBtn { display: inline-flex; }
   #gTouchBar.has-back .tTipkeTxt { display: none; }
-  .tSosBtn {
-    display: none; position: absolute; top: 8px; right: 8px; z-index: 950;
-    height: 32px; padding: 0 11px; border-radius: 7px; overflow: hidden;
-    background: rgba(153, 27, 27, .92); color: #fff; border: 1.5px solid #ef4444;
-    box-shadow: 0 3px 10px rgba(0,0,0,.45);
-    font: 800 11px/1 system-ui, -apple-system, sans-serif; letter-spacing: .08em;
-    align-items: center; justify-content: center; gap: 4px;
-    cursor: pointer; user-select: none; -webkit-user-select: none; touch-action: none;
+  @media (max-width: 390px) {
+    #gTouchBar { left: 6px; right: 6px; gap: 4px; }
+    #gTouchBar .tbGrp { gap: 4px; }
+    .tFab { height: 42px; padding: 0 8px; font-size: 11px; gap: 3px; letter-spacing: .02em; }
+    .tFab.ico, .tFab.backBtn { width: 38px; }
+    .tFab.okBtn { min-width: 40px; padding: 0 9px; }
   }
-  .tSosBtn::after {
-    content: ''; position: absolute; inset: 0; pointer-events: none;
-    background: rgba(255,255,255,.32); transform-origin: left center;
-    transform: scaleX(0); opacity: 0;
+  #tZoomStack {
+    display: none; position: absolute; right: 8px; bottom: calc(114px + var(--safe-b)); z-index: 950;
+    flex-direction: column; gap: 6px;
   }
-  .tSosBtn.hold { box-shadow: 0 0 16px rgba(239, 68, 68, .9), inset 0 0 0 1.5px #fff; }
-  .tSosBtn.hold::after { opacity: 1; transform: scaleX(1); transition: transform 1s linear, opacity .06s; }
+  #tZoomStack button {
+    width: 42px; height: 42px; padding: 0; border-radius: 10px;
+    background: rgba(20, 22, 23, .9); color: #eef2ef; border: 1.5px solid #454c50;
+    box-shadow: 0 4px 12px rgba(0,0,0,.45); font: 700 22px/1 system-ui;
+    display: inline-flex; align-items: center; justify-content: center;
+    cursor: pointer; touch-action: manipulation;
+  }
+  #tZoomStack button:active { transform: scale(.94); background: #2c3134; }
+  .gCalTouch { display: none; gap: 5px; margin-top: 8px; align-items: center; }
+  .gCalTouch button {
+    flex: 1; height: 34px; padding: 0 4px; border-radius: 7px;
+    background: #282e31; color: #eef2ef; border: 1px solid #464f54;
+    font: 700 12px/1 ui-monospace, Menlo, monospace; cursor: pointer; touch-action: manipulation;
+  }
+  .gCalTouch button.ok { flex: 1.5; background: #263c2d; border-color: #7fb069; color: #fff; font-family: system-ui, sans-serif; }
+  .gCalTouch button:active { transform: scale(.95); }
   .gMenuCloseBtn {
-    display: none; padding: 4px 8px; border-radius: 2px; background: #2a2f32; color: #e2e6e3;
-    border: 1px solid #42484c; font: 700 10.5px/1 system-ui; cursor: pointer;
+    display: none; padding: 4px 7px; border-radius: 2px; background: #2a2f32; color: #e2e6e3;
+    border: 1px solid #42484c; font: 700 10.5px/1 system-ui; cursor: pointer; white-space: nowrap;
   }
 
   body.g-touch { max-width: none !important; }
@@ -1303,13 +1327,32 @@ svg.leaflet-image-layer.leaflet-interactive path {
   body.g-touch #gScreen #gCross, body.g-touch #gScreen #sight, body.g-touch #gScreen #gScaleBar { pointer-events: none !important; }
   body.g-touch #gScreen #gTouchBar { display: flex !important; pointer-events: none !important; }
   body.g-touch #gScreen #gTouchBar .tbGrp { pointer-events: auto !important; }
-  body.g-touch #gScreen #tSosBtn.show { display: inline-flex !important; }
+  body.g-touch #gScreen #tZoomStack.show { display: flex !important; }
   body.g-touch #gScreen #sheet > .row:first-child { display: flex !important; }
   body.g-touch #gScreen #ip button.x, body.g-touch #gScreen #nav button.x, body.g-touch #gScreen #sb button.x {
     display: inline-flex !important; align-items: center; justify-content: center;
     background: #28302c !important; color: #eef3ef !important; border: 1px solid #48534c !important;
     border-radius: 6px !important; min-width: 34px; height: 34px; padding: 0 !important; flex: none;
   }
+  body.g-touch #gScreen #ip button.x {
+    position: absolute !important; top: 5px; right: 6px; float: none !important; margin: 0 !important; z-index: 5;
+    min-width: 28px; height: 26px;
+  }
+  body.g-touch #gScreen #ip:not(.route-dock)::before {
+    display: flex; align-items: center; min-height: 22px; padding-right: 36px; line-height: 1.2;
+  }
+  body.g-touch #gScreen #ip.route-dock button.x { top: 6px; right: 8px; min-width: 30px; height: 28px; }
+  body.g-touch #gScreen #ip.route-dock .rtHd { padding-right: 38px; align-items: center; min-height: 24px; }
+  body.g-touch #gScreen #nav {
+    left: 8px !important; right: 8px !important; width: auto !important; max-width: none !important;
+    top: 46px !important; border-radius: 10px !important; border-right: 1px solid #3c4245 !important;
+  }
+  body.g-touch #gScreen #calBar {
+    left: 8px !important; right: 8px !important; bottom: calc(64px + var(--safe-b)) !important;
+    max-width: none !important; border-radius: 12px !important;
+  }
+  body.g-touch #gScreen #calBar #gCalKeys { display: none !important; }
+  body.g-touch #gScreen #calBar .gCalTouch { display: flex !important; }
   body.g-touch #gScreen #sb input { pointer-events: auto !important; font: 600 15px/1.25 system-ui, -apple-system, sans-serif !important; padding: 9px 10px !important; border-radius: 6px !important; }
   body.g-touch #gKbd, body.g-touch #gMkKbd, body.g-touch #gRenKbd { display: none !important; }
   body.g-touch #gQuickCats { display: flex !important; }
@@ -1322,6 +1365,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
     left: 8px !important; right: 8px !important; width: auto !important; max-width: none !important;
     border: 1px solid #464e52 !important; border-radius: 10px !important;
   }
+  body.g-touch #gMenu { width: min(84%, 300px) !important; max-width: 300px !important; }
   body.g-touch #gMenuHd .gMenuCloseBtn { display: inline-flex !important; }
   body.g-touch #gMenuHd #gMenuBackBtn.hide { display: none !important; }
   #gMenuFt { gap: 8px; align-items: center; }
@@ -1368,7 +1412,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
 <div id="gScreen">
 <div id="map"></div>
 <div id="gScaleBar" aria-label="Razmjer karte"><div class="scTop"><span id="gScaleTxt">5 km</span><span class="scRat" id="gScaleRat">1:250 000</span></div><div class="scLine" id="gScaleLine"></div></div>
-<button id="tSosBtn" class="tSosBtn" aria-label="Hitno SOS (drži 1 sekundu)">SOS</button>
+<div id="tZoomStack" aria-label="Jednoručni zum"><button id="tZinBtn" onclick="gKey('zin')" aria-label="Uvećaj kartu">+</button><button id="tZoutBtn" onclick="gKey('zout')" aria-label="Umanji kartu">−</button></div>
 <div id="gCross" aria-hidden="true"><svg viewBox="0 0 44 44">
   <circle cx="22" cy="22" r="5.5" fill="none" stroke="rgba(12,16,14,.88)" stroke-width="4.4"/>
   <path d="M22 3v11M22 30v11M3 22h11M30 22h11" stroke="rgba(12,16,14,.88)" stroke-width="4.4" stroke-linecap="round"/>
@@ -1389,6 +1433,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
   <div class="hd"><span id="calBadge"><span class="dot"></span><span id="calVal">Okreni kartu da se poklopi</span></span></div>
   <div id="calHint">Strelice ◄► poravnavaju kompas po 1°, OK sprema, NAZAD izlazi.</div>
   <div id="calDialWrap"><div id="calWheel" aria-label="Skala za poravnanje po stepenima"><div id="calTrack"><div id="calInner"></div></div></div></div>
+  <div class="gCalTouch"><button onclick="setHdgOff(hdgOff-5,true)">−5°</button><button onclick="setHdgOff(hdgOff-1,true)">−1°</button><button onclick="setHdgOff(hdgOff+1,true)">+1°</button><button onclick="setHdgOff(hdgOff+5,true)">+5°</button><button onclick="calReset()">0°</button><button class="ok" onclick="calToggle(false);gUpdateCross();gTickHud()">✓ Gotovo</button></div>
   <div id="gCalKeys"><span>◄ ► Pomjeri 1°</span><span>OK Gotovo · NAZAD</span></div>
 </div>
 <div class="card" id="sb"><div class="row"><input id="q" type="search" placeholder="Upiši mjesto, vrh, dom ili lat,lng" enterkeyhint="search" autocomplete="off" autocapitalize="off"><button class="x" onclick="gCloseSearch()">✕</button></div><div id="gQuickCats" aria-label="Brzi prijedlozi"><button onclick="gQuickSearch('vrh')">🏔 Vrhovi</button><button onclick="gQuickSearch('planinarski dom')">🏠 Domovi</button><button onclick="gQuickSearch('izvor')">💧 Izvori</button><button onclick="gQuickSearch('parking')">🅿 Parking</button><button onclick="gQuickSearch('__marks__')">📍 Markeri</button></div><div id="gKbd" aria-label="Tastatura"></div><div id="sr"></div></div>
@@ -1402,7 +1447,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
   <div class="tbGrp">
     <button class="tFab" id="tModeBtn" onclick="gSetTouchMode(false)" aria-label="Prebaci na tipke za rukavice">🧤<span class="tTipkeTxt"> Tipke</span></button>
     <button class="tFab ico" id="tLocBtn" onclick="locGo()" aria-label="Moja lokacija"><svg class="i" style="width:20px;height:20px" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.2"/><circle cx="12" cy="12" r="7.5"/><path d="M12 2.5v2.5M12 19v2.5M2.5 12H5M19 12h2.5"/></svg></button>
-    <button class="tFab" id="tRotBtn" onclick="setMapRot(!mapRot)" aria-label="Promijeni Sjever ili Smjer">🧭 SJEVER</button>
+    <button class="tFab ico" id="tRotBtn" onclick="setMapRot(!mapRot)" aria-label="Po sjeveru (klikni za Smjer)" title="Po sjeveru / Po smjeru"><svg viewBox="0 0 24 24" style="width:20px;height:20px;display:block" aria-hidden="true"><g class="icoN"><circle cx="12" cy="12" r="9.2" fill="none" stroke="rgba(255,255,255,.28)" stroke-width="1.4"/><path d="M12 3.5L15.4 12H8.6Z" fill="#ff5447"/><path d="M12 20.5L15.4 12H8.6Z" fill="#aeb8b2"/><circle cx="12" cy="12" r="1.4" fill="#181a1b"/></g><g class="icoH"><path d="M12 2.8L19.4 20.2L12 16L4.6 20.2Z" fill="#9ad67f" stroke="#181a1b" stroke-width="0.7" stroke-linejoin="round"/></g></svg></button>
   </div>
   <div class="tbGrp">
     <button class="tFab backBtn" id="tBackBtn" onclick="gKey('back')" aria-label="Nazad / Izađi iz alata"><svg style="width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round" viewBox="0 0 24 24"><path d="M9.5 14L5 9.5L9.5 5"/><path d="M5.5 9.5h9a4.5 4.5 0 0 1 0 9h-5"/></svg></button>
@@ -1534,18 +1579,100 @@ async function getElev(pts) { const out = [];
     if (!r.ok) throw 0; out.push(...(await r.json()).elevation); } return out; }
 const safeElev = p => getElev(p).catch(() => null);
 
-function drawProfile(el) {
-  if (!el || el.length < 2) return;
-  $('ip').style.display = 'block'; prof.style.display = 'block';
-  const dpr = devicePixelRatio || 1, w = prof.clientWidth || 220, h = prof.clientHeight || 80;
-  prof.width = w * dpr; prof.height = h * dpr; const g = prof.getContext('2d'); g.scale(dpr, dpr);
-  const mn = Math.min(...el), mx = Math.max(...el), rg = Math.max(mx - mn, 1);
-  g.clearRect(0, 0, w, h); g.fillStyle = 'rgba(255,255,255,.04)'; g.fillRect(0, 0, w, h);
+let lastProfData = null;
+function drawProfile(el, totalDistM = null) {
+  const model = HikeMath.computeElevationProfile(el);
+  if (!model) { lastProfData = null; prof.style.display = 'none'; return; }
+  lastProfData = { el: model.values, totalDistM: totalDistM != null && isFinite(totalDistM) && totalDistM > 0 ? totalDistM : null };
+  $('ip').style.display = 'block';
+  $('ip').classList.toggle('route-dock', !!info.querySelector('.rtDock'));
+  prof.style.display = 'block';
+  const rect = prof.getBoundingClientRect();
+  const dpr = Math.min(window.devicePixelRatio || 1, 3);
+  const w = Math.max(160, Math.round(rect.width || prof.clientWidth || 240));
+  const h = Math.max(72, Math.round(rect.height || prof.clientHeight || 82));
+  prof.width = Math.round(w * dpr);
+  prof.height = Math.round(h * dpr);
+  const g = prof.getContext('2d');
+  g.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+  // Background panel
+  g.clearRect(0, 0, w, h);
+  g.fillStyle = 'rgba(255,255,255,.045)';
+  g.fillRect(0, 0, w, h);
+
+  // Dedicated left Y-axis gutter so elevation numbers NEVER overlap the curve
+  const hasDist = lastProfData.totalDistM != null;
+  const padL = 48, padR = 8, padT = 10, padB = hasDist ? 18 : 10;
+  const pw = Math.max(40, w - padL - padR);
+  const ph = Math.max(24, h - padT - padB);
+
+  // Subtle horizontal reference gridlines (max, mid, min)
+  g.save();
+  g.strokeStyle = 'rgba(255,255,255,.12)';
+  g.lineWidth = 1;
+  g.setLineDash([3, 3]);
+  const gridYs = [padT, padT + ph / 2, padT + ph];
+  for (const gy of gridYs) {
+    g.beginPath(); g.moveTo(padL, Math.round(gy) + 0.5); g.lineTo(padL + pw, Math.round(gy) + 0.5); g.stroke();
+  }
+  g.restore();
+
+  // Left Y-axis crisp right-aligned labels
+  g.fillStyle = '#cfd8d3';
+  g.font = '600 10px ui-monospace, Menlo, system-ui';
+  g.textAlign = 'right';
+  g.textBaseline = 'middle';
+  g.fillText(Math.round(model.yMax) + ' m', padL - 5, padT + 1);
+  g.fillStyle = '#8b9690';
+  g.fillText(Math.round(model.yMid) + ' m', padL - 5, padT + ph / 2);
+  g.fillStyle = '#cfd8d3';
+  g.fillText(Math.round(model.yMin) + ' m', padL - 5, padT + ph - 1);
+
+  // Elevation area fill with vertical gradient
+  const pts = model.points.map(pt => ({
+    x: padL + pt.xNorm * pw,
+    y: padT + (1 - pt.yNorm) * ph
+  }));
+  const grad = g.createLinearGradient(0, padT, 0, padT + ph);
+  grad.addColorStop(0, 'rgba(240,98,43,.42)');
+  grad.addColorStop(1, 'rgba(240,98,43,.04)');
   g.beginPath();
-  el.forEach((v, i) => { const x = i / (el.length - 1) * w, y = h - 6 - (v - mn) / rg * (h - 20); i ? g.lineTo(x, y) : g.moveTo(x, y); });
-  g.strokeStyle = '#f0622b'; g.lineWidth = 2.2; g.stroke(); g.lineTo(w, h); g.lineTo(0, h); g.closePath(); g.fillStyle = 'rgba(240,98,43,.28)'; g.fill();
-  g.fillStyle = '#f0f4f1'; g.font = '600 11px ui-monospace, Menlo, system-ui';
-  g.fillText(Math.round(mx) + ' m', 5, 13); g.fillText(Math.round(mn) + ' m', 5, h - 5); }
+  pts.forEach((p, i) => (i ? g.lineTo(p.x, p.y) : g.moveTo(p.x, p.y)));
+  g.lineTo(pts[pts.length - 1].x, padT + ph);
+  g.lineTo(pts[0].x, padT + ph);
+  g.closePath();
+  g.fillStyle = grad;
+  g.fill();
+
+  // Crisp elevation curve
+  g.beginPath();
+  pts.forEach((p, i) => (i ? g.lineTo(p.x, p.y) : g.moveTo(p.x, p.y)));
+  g.strokeStyle = '#f0622b';
+  g.lineWidth = 2.2;
+  g.lineJoin = 'round';
+  g.lineCap = 'round';
+  g.stroke();
+
+  // Peak highlight dot
+  const pk = pts[model.maxIdx];
+  if (pk) {
+    g.beginPath(); g.arc(pk.x, pk.y, 3.2, 0, Math.PI * 2);
+    g.fillStyle = '#f0622b'; g.fill();
+    g.lineWidth = 1.4; g.strokeStyle = '#ffffff'; g.stroke();
+  }
+
+  // Bottom distance axis labels (0 ... total distance)
+  if (hasDist) {
+    g.fillStyle = '#9aa6a0';
+    g.font = '600 9.5px ui-monospace, Menlo, system-ui';
+    g.textBaseline = 'bottom';
+    g.textAlign = 'left';
+    g.fillText('0', padL, h - 2);
+    g.textAlign = 'right';
+    g.fillText(fmtD(lastProfData.totalDistM), padL + pw, h - 2);
+  }
+}
 
 const dot = (ll, col, g) => L.circleMarker(ll, { radius: 6, color: '#fff', weight: 2, fillColor: col || '#e8710a', fillOpacity: 1 }).addTo(g || tools);
 const label = (ll, html) => L.tooltip({ permanent: true, direction: 'center', className: 'lbl', opacity: 1 }).setLatLng(ll).setContent('<span class="cr">' + html + '</span>').addTo(tools);
@@ -1593,7 +1720,8 @@ function setMode(m) {
   mode = mode === m ? null : m;
   resetTools();
   if (mode === 'route' && typeof mapRot !== 'undefined' && mapRot) setMapRot(false);
-  info.textContent = mode ? ({ measure: 'Označi tačke za mjerenje putanje.', bearing: me ? 'Označi tačku – azimut od tvoje lokacije.' : 'Označi početnu tačku, pa odredište.', radius: 'Označi centar, pa drugu tačku.', elev: 'Označi tačku za nadmorsku visinu (treba internet).', route: 'Označi A, pa B (' + HikeMath.getRouteProfile(rtProfVal).label + ' · treba internet).' })[mode] : 'Alat isključen.';
+  if (typeof syncWakeLock === 'function') syncWakeLock();
+  info.textContent = mode ? ({ measure: 'Označi tačke za mjerenje putanje.', bearing: me ? 'Označi tačku – azimut od tvoje lokacije.' : 'Označi početnu tačku, pa odredište.', radius: 'Označi centar, pa drugu tačku.', elev: 'Označi tačku za nadmorsku visinu (treba internet).', route: 'Označi A, pa B (' + HikeMath.getRouteProfile(rtProfVal).label + ' · offline: zračna linija).' })[mode] : 'Alat isključen.';
 }
 function resetTools() { tools.clearLayers(); rPts = []; rSegs = []; mPts = []; mLine = rCenter = bStart = null; if (typeof gSnapRtIdx !== 'undefined') gSnapRtIdx = null; prof.style.display = 'none'; token++; }
 function clearDrawings() { resetTools(); trk.clearLayers(); curTrack = null; if (typeof gSnapTrk !== 'undefined') gSnapTrk = null; info.textContent = 'Obrisano.'; }
@@ -1621,8 +1749,9 @@ async function profile(total, html) {
     const f = sl ? Math.min(1, (t - s0) / sl) : 0, a = mPts[seg], b = mPts[seg + 1]; S.push({ lat: a.lat + (b.lat - a.lat) * f, lng: a.lng + (b.lng - a.lng) * f }); }
   const el = await safeElev(S); if (my !== token) return;
   if (!el) { info.innerHTML = html + '<br>Visine nedostupne (treba internet).'; return; }
-  const [up, dn] = asc(el);
-  info.innerHTML = html + '<br>Uspon: <b>+' + Math.round(up) + ' m</b> · Spust: <b>−' + Math.round(dn) + ' m</b><br>Min/Max: ' + Math.round(Math.min(...el)) + ' / ' + Math.round(Math.max(...el)) + ' m'; drawProfile(el); }
+  const [up, dn] = asc(el), profM = HikeMath.computeElevationProfile(el);
+  info.innerHTML = html + '<br>Uspon: <b>+' + Math.round(up) + ' m</b> · Spust: <b>−' + Math.round(dn) + ' m</b>' + (profM ? '<br>Min/Max: ' + Math.round(profM.min) + ' / ' + Math.round(profM.max) + ' m' : '');
+  drawProfile(el, total); }
 async function bearingTo(p) {
   let from = me; if (!from) { if (!bStart) { bStart = p; tools.clearLayers(); dot(p, '#2e7d32'); label(p, 'A'); info.innerHTML = ''; return; } from = bStart; bStart = null; }
   tools.clearLayers(); dot(from, '#2e7d32'); dot(p, '#f0622b'); L.polyline([from, p], { color: '#f0622b', weight: 3.5, dashArray: '8 6' }).addTo(tools);
@@ -1642,7 +1771,6 @@ async function elevAt(p) { tools.clearLayers(); dot(p); info.innerHTML = '<b>' +
 
 /* ---------- Pretraga (najbliže prvo) ---------- */
 let sr = [];
-function toggleSearch() { if ($('sb').style.display === 'block') closeSearch(); else { if (calOn) calToggle(false); sheet(); $('sb').style.display = 'block'; $('q').focus(); } }
 function closeSearch() { runId++; ctrls.forEach(c => c.abort()); clearTimeout(tPh); $('sb').style.display = 'none'; $('sb').classList.remove('g-open'); $('sr').innerHTML = ''; $('q').blur(); }
 let gLastPlace = null;
 function goTo(ll, name) { closeSearch(); locLock = false; gSnapMk = null; gLastPlace = name ? { ll, name } : null; gViewAtCross(ll, Math.max(map.getZoom(), 14));
@@ -1758,7 +1886,7 @@ async function overpass(toks, cats, c, R = 50000) {
   else if (rx) body = ['natural', 'tourism', 'place', 'amenity', 'waterway'].map(k => 'nwr' + ar + '["' + k + '"]["name"~"' + rx + '",i];').join(''); else return [];
   const data = '[out:json][timeout:6];(' + body + ');out center 60;';
   const one = u => fj(u, { method: 'POST', body: 'data=' + encodeURIComponent(data), headers: { 'Content-Type': 'application/x-www-form-urlencoded' } }, 7000).then(r => { if (!r.ok) throw 0; return r.json(); });
-  const j = await Promise.any(['https://overpass-api.de/api/interpreter', 'https://overpass.kumi.systems/api/interpreter'].map(one));
+  const j = await Promise.any(['https://overpass-api.de/api/interpreter', 'https://overpass.kumi.systems/api/interpreter', 'https://maps.mail.ru/osm/tools/overpass/api/interpreter'].map(one));
   return j.elements.filter(e => e.lat != null || e.center).map(e => { const t = e.tags || {}, p = e.center || e, k = t.tourism || t.natural || t.amenity || t.place || t.waterway || t.shop || '';
     return { name: tr(t.name) || KIND[k] || 'Bez naziva', sub: (KIND[k] || k) + (t.ele ? ' · ' + Math.round(parseFloat(t.ele)) + ' m' : ''), ll: L.latLng(p.lat, p.lon) }; }); }
 async function nominatim(q, c) { const d = 1.5, base = 'https://nominatim.openstreetmap.org/search?format=jsonv2&limit=10&accept-language=bs,hr,sr-Latn,en&q=' + encodeURIComponent(q);
@@ -1852,7 +1980,7 @@ function showTrack(t, fit = true) { curTrack = t;
   info.innerHTML = '<b class="big">' + esc(t.name) + '</b><br>Dužina: <b>' + fmtD(s.d) + '</b>' + (s.ms ? ' · Vrijeme: ' + fmtT(s.ms) : '') +
     (s.el.length ? '<br>Uspon +' + Math.round(s.up) + ' m · Spust −' + Math.round(s.dn) + ' m<br>Min/Max: ' + Math.round(Math.min(...s.el)) + ' / ' + Math.round(Math.max(...s.el)) + ' m' : '') +
     '<br>Start→kraj: ' + brg(bearing(a, b)) + ' · ' + fmtD(dist(a, b)) + (t.pts.length > 1 ? '<br><button onclick="navFollow(curTrack)">▶ Prati rutu</button>' : '');
-  if (s.el.length > 1) drawProfile(s.el); else prof.style.display = 'none';
+  if (s.el.length > 1) drawProfile(s.el, s.d); else prof.style.display = 'none';
   if (fit) map.fitBounds(l.getBounds(), { padding: [30, 30] }); }
 function parseGpx(txt, name) {
   const x = new DOMParser().parseFromString(txt, 'application/xml'), q = (n, s) => n.querySelector(s),
@@ -1967,13 +2095,42 @@ function recNextColor() {
   try { localStorage.setItem('hike_recCol', String(recColIdx)); } catch (e) {}
   recUpdateStyle();
 }
-async function recAcquireWake() {
-  if (!rec || !navigator.wakeLock) return;
-  try { wake = await navigator.wakeLock.request('screen'); } catch (e) {}
+let gKeepAwake = true;
+try { gKeepAwake = localStorage.getItem('hike_awake') !== '0'; } catch (e) {}
+async function syncWakeLock() {
+  const want = HikeMath.shouldHoldWakeLock({
+    keepAwake: gKeepAwake,
+    isVisible: document.visibilityState === 'visible',
+    isRecording: !!rec,
+    isNavigating: typeof navT !== 'undefined' && !!navT,
+    isRouting: mode === 'route' || (typeof rPts !== 'undefined' && rPts.length > 0)
+  });
+  if (!navigator.wakeLock) return;
+  if (want) {
+    if (wake) return;
+    try {
+      const s = await navigator.wakeLock.request('screen');
+      wake = s;
+      s.addEventListener('release', () => {
+        if (wake === s) wake = null;
+        if (document.visibilityState === 'visible') setTimeout(syncWakeLock, 300);
+      });
+    } catch (e) {}
+  } else if (wake) {
+    try { await wake.release(); } catch (e) {}
+    wake = null;
+  }
+}
+function toggleKeepAwake() {
+  gKeepAwake = !gKeepAwake;
+  try { localStorage.setItem('hike_awake', gKeepAwake ? '1' : '0'); } catch (e) {}
+  syncWakeLock();
 }
 document.addEventListener('visibilitychange', () => {
-  if (document.visibilityState === 'visible' && rec) recAcquireWake();
+  if (document.visibilityState === 'visible') syncWakeLock();
 });
+['pointerdown', 'keydown'].forEach(ev => window.addEventListener(ev, () => { if (!wake) syncWakeLock(); }, { passive: true }));
+setTimeout(syncWakeLock, 0);
 function recTogglePause() {
   if (!rec) return;
   if (!rec.paused) {
@@ -1996,7 +2153,7 @@ async function recStart(cur) {
   recCasing = L.polyline(ll, { color: c.edge, weight: 8, opacity: .88 }).addTo(map);
   recLine = L.polyline(ll, { color: c.hex, weight: 4.5, opacity: 1, dashArray: rec.paused ? '8 8' : null }).addTo(map);
   if (ll.length) recStartDot = L.circleMarker(ll[0], { radius: 7, color: '#fff', weight: 2.5, fillColor: '#22c55e', fillOpacity: 1 }).addTo(map);
-  await recAcquireWake();
+  await syncWakeLock();
   if (typeof gTickHud === 'function') gTickHud();
 }
 function recPoint(pos) { if (!rec || rec.paused) return; const c = pos.coords; if (c.accuracy > 40) return;
@@ -2010,7 +2167,7 @@ function recPoint(pos) { if (!rec || rec.paused) return; const c = pos.coords; i
 async function recStop() {
   if (!rec) return;
   const r = rec; rec = null; recClearLayers(); dbDel('tracks', 'cur'); gOledToggle(false);
-  if (wake) { wake.release().catch(() => {}); wake = null; }
+  syncWakeLock();
   if (typeof gReturnMenu !== 'undefined') gReturnMenu = null;
   sheet();
   if (r.pts.length < 2) { info.textContent = 'Premalo tačaka – ruta nije spremljena.'; if (typeof gTickHud === 'function') gTickHud(); return; }
@@ -2275,7 +2432,9 @@ function updRotLabel() {
   const tb = $('tRotBtn');
   if (tb) {
     tb.classList.toggle('rot', mapRot);
-    tb.textContent = mapRot ? '🧭 SMJER' : '🧭 SJEVER';
+    const lbl = mapRot ? 'Po smjeru (klikni za Sjever)' : 'Po sjeveru (klikni za Smjer)';
+    tb.setAttribute('aria-label', lbl);
+    tb.setAttribute('title', lbl);
   }
   updCalPill(); updCalMeta();
 }
@@ -2530,7 +2689,7 @@ function calToggle(on) {
   if (calOn) {
     sheet(); closeSearch(); $('ip').style.display = 'none'; $('nav').style.display = 'none';
     setRotOrig(0.5); compassListen(); if (!mapRot) setMapRot(true); if (me) map.panTo(me, { animate: false });
-    $('calHint').textContent = CAL_HINT;
+    $('calHint').textContent = (typeof gTouchMode !== 'undefined' && gTouchMode) ? 'Povuci skalu, dodirni objekat na karti ili koristi −1° / +1°.' : CAL_HINT;
   } else {
     if (mapRot) { setRotOrig(0.68); if (me && locLock) centerOnMe(map.getZoom(), false); }
     if (info.textContent.trim()) $('ip').style.display = 'block';
@@ -2546,6 +2705,7 @@ function calToggle(on) {
   $('calBar').style.display = calOn ? 'block' : 'none';
   if (calOn) { initCalDial(); requestAnimationFrame(() => syncCalDial(false)); }
   updRotLabel();
+  if (typeof gSyncTouchBar === 'function') gSyncTouchBar();
 }
 (() => {
   const w = $('calWheel');
@@ -2591,6 +2751,13 @@ new MutationObserver(() => {
   const has = !!info.textContent.trim();
   $('ip').style.display = has ? 'block' : 'none';
   $('ip').classList.toggle('route-dock', has && !!info.querySelector('.rtDock'));
+  if (!has) { lastProfData = null; prof.style.display = 'none'; }
+  else if (lastProfData && prof.style.display !== 'none') {
+    const r = prof.getBoundingClientRect(), dpr = Math.min(window.devicePixelRatio || 1, 3);
+    if (r.width > 0 && (Math.abs(prof.width - Math.round(r.width * dpr)) > 2 || Math.abs(prof.height - Math.round(r.height * dpr)) > 2)) {
+      drawProfile(lastProfData.el, lastProfData.totalDistM);
+    }
+  }
   if (typeof gUpdateCross === 'function') gUpdateCross();
 }).observe(info, { childList: true, subtree: true, characterData: true });
 
@@ -2612,11 +2779,13 @@ async function routeRecalcAll() {
   for (let i = 1; i < rPts.length; i++) {
     const alts = await routeSegAlts(rPts[i - 1], rPts[i], pf);
     if (!alts || !alts.length) { busy = false; info.textContent = 'Ruta za profil „' + pi.short + '“ nije nađena.'; return; }
-    rSegs.push({ pts: alts[0].pts, d: alts[0].d, durSec: alts[0].durSec, ms: alts[0].ms, prof: pf, alts, altIdx: 0 });
+    rSegs.push({ pts: alts[0].pts, d: alts[0].d, durSec: alts[0].durSec, ms: alts[0].ms, prof: pf, direct: !!alts[0].direct, alts, altIdx: 0 });
   }
   busy = false; routeDraw(); routeInfo(); setTimeout(routeFitMap, 60);
 }
 async function routeSegAlts(a, b, pf) {
+  const directFallback = () => [HikeMath.buildDirectSegment(a, b, pf)];
+  if (typeof navigator !== 'undefined' && navigator.onLine === false) return directFallback();
   const brouterIdx = async idx => {
     const c = new AbortController(), tm = setTimeout(() => c.abort(), 8500);
     try {
@@ -2654,9 +2823,9 @@ async function routeSegAlts(a, b, pf) {
       uniq.sort((x, y) => x.ms - y.ms);
       return uniq;
     }
-    try { return await osm('foot', 'foot')(); } catch (e) { return null; }
+    try { return await osm('foot', 'foot')(); } catch (e) { return directFallback(); }
   }
-  try { return await osm(pf === 'foot' ? 'foot' : 'car', pf)(); } catch (e) { return null; }
+  try { return await osm(pf === 'foot' ? 'foot' : 'car', pf)(); } catch (e) { return directFallback(); }
 }
 let gRouteKeepFocus = null;
 function routeFitMap() {
@@ -2677,7 +2846,7 @@ function routePickAlt(idx) {
   const seg = rSegs[rSegs.length - 1];
   if (!seg || !seg.alts || !seg.alts[idx]) return;
   const al = seg.alts[idx];
-  seg.altIdx = idx; seg.pts = al.pts; seg.d = al.d; seg.durSec = al.durSec; seg.ms = al.ms;
+  seg.altIdx = idx; seg.pts = al.pts; seg.d = al.d; seg.durSec = al.durSec; seg.ms = al.ms; seg.direct = !!al.direct;
   gRouteKeepFocus = idx;
   routeDraw(); routeInfo();
 }
@@ -2695,9 +2864,9 @@ function routeDraw() { tools.clearLayers();
     }
     const selPts = s.pts.map(p => [p.lat, p.lng]);
     L.polyline(selPts, { color: '#141618', weight: 7.5, opacity: .78 }).addTo(tools);
-    L.polyline(selPts, { color: '#f0622b', weight: 4.5, opacity: .98 }).addTo(tools);
-    const m = s.pts[s.pts.length >> 1];
-    if (m) label([m.lat, m.lng], (s.alts && s.alts.length > 1 ? '#' + ((s.altIdx || 0) + 1) + ' · ' : '') + fmtD(s.d));
+    L.polyline(selPts, { color: s.direct ? '#f59e0b' : '#f0622b', weight: 4.5, dashArray: s.direct ? '8 7' : null, opacity: .98 }).addTo(tools);
+    const m = s.direct ? L.latLng((s.pts[0].lat + s.pts[s.pts.length - 1].lat) / 2, (s.pts[0].lng + s.pts[s.pts.length - 1].lng) / 2) : s.pts[s.pts.length >> 1];
+    if (m) label([m.lat, m.lng], (s.direct ? 'Zračno · ' : s.alts && s.alts.length > 1 ? '#' + ((s.altIdx || 0) + 1) + ' · ' : '') + fmtD(s.d));
   });
   rPts.forEach((p, i) => {
     L.circleMarker(p, { radius: 8, color: '#fff', weight: 2.5, fillColor: i === 0 ? '#2e7d32' : '#d93025', fillOpacity: 1 }).addTo(tools);
@@ -2708,20 +2877,14 @@ async function routeAdd(p) {
   if (busy) return;
   rPts.push(p); gSnapRtIdx = null; gSnapCool = Date.now() + 650;
   routeDraw();
-  if (rPts.length < 2) { info.innerHTML = ''; prof.style.display = 'none'; gUpdateCross(); gTickHud(); return; }
+  if (rPts.length < 2) { info.innerHTML = ''; prof.style.display = 'none'; gUpdateCross(); gTickHud(); syncWakeLock(); return; }
   const pf = rtProfVal, pi = HikeMath.getRouteProfile(pf);
   busy = true; info.innerHTML = '<i>Tražim rute (' + pi.icon + ' ' + pi.short + ')…</i>';
   const alts = await routeSegAlts(rPts[rPts.length - 2], p, pf); busy = false;
-  if (!alts || !alts.length) { rPts.pop(); routeDraw(); info.textContent = 'Ruta nije nađena (treba internet ili nema puta).'; return; }
-  rSegs.push({ pts: alts[0].pts, d: alts[0].d, durSec: alts[0].durSec, ms: alts[0].ms, prof: pf, alts, altIdx: 0 });
-  routeDraw(); routeInfo();
+  if (!alts || !alts.length) { rPts.pop(); routeDraw(); info.textContent = 'Ruta nije nađena.'; return; }
+  rSegs.push({ pts: alts[0].pts, d: alts[0].d, durSec: alts[0].durSec, ms: alts[0].ms, prof: pf, direct: !!alts[0].direct, alts, altIdx: 0 });
+  routeDraw(); routeInfo(); syncWakeLock();
   setTimeout(routeFitMap, 60);
-}
-function routeUndo() {
-  rPts.pop(); rSegs.pop(); gSnapRtIdx = null;
-  routeDraw();
-  if (rSegs.length) routeInfo(); else { info.innerHTML = ''; prof.style.display = 'none'; }
-  gUpdateCross(); gTickHud();
 }
 function routePtDelAsk(idx) {
   if (!rPts[idx]) return;
@@ -2773,16 +2936,17 @@ async function routeInfo() {
         '<button class="' + (i === selIdx ? 'rtSel' : '') + '" onclick="routePickAlt(' + i + ')"><span>' + (i === 0 ? '★ ' : '') + (pf === 'car' ? 'Put ' : 'Staza ') + (i + 1) + '</span><small>' + fmtD(al.d) + (pf === 'car' ? ' · ' + HikeMath.fmtDurationShort(al.ms) : al.up ? ' · +' + Math.round(al.up) + 'm' : '') + '</small></button>'
       ).join('') + '</div>' : '';
   const actBtns = '<div class="rtAct"><button class="rtGo" onclick="navFollowRoute()">▶ Prati</button><button class="gray" id="bRtSave" onclick="routeSave()">Spremi</button><button class="gray" onclick="rtProfNext(true)">' + pi.icon + ' ' + pi.short + ' ↻</button></div>';
-  const foot = '<div class="rtFoot"><span>◀▶ Izbor · OK Potvrdi</span><span id="rtFootMsg">NAZAD Mapa / A-B</span></div>';
+  const hasDirect = rSegs.some(s => s.direct);
+  const foot = '<div class="rtFoot"><span>' + (gTouchMode ? 'Dodirni opciju · Prati ili Spremi' : '◀▶ Izbor · OK Potvrdi') + '</span><span id="rtFootMsg">NAZAD Mapa / A-B</span></div>';
   const renderDock = (statsHtml) => '<div class="rtDock">' +
-    '<div class="rtHd"><span class="rtDist">' + pi.icon + ' ' + fmtD(d) + '</span><span class="rtMeta">' + (alts ? 'OPCIJA ' + (selIdx + 1) + '/' + alts.length + ' · ' : '') + brg(bearing(a, b)) + '</span></div>' +
+    '<div class="rtHd"><span class="rtDist">' + pi.icon + ' ' + fmtD(d) + '</span><span class="rtMeta">' + (hasDirect ? 'OFFLINE · ZRAČNO · ' : alts ? 'OPCIJA ' + (selIdx + 1) + '/' + alts.length + ' · ' : '') + brg(bearing(a, b)) + '</span></div>' +
     '<div class="rtStats">' + statsHtml + '</div>' +
     altBtns + actBtns + foot + '</div>';
   const my = ++token;
-  if (pf === 'car') {
-    const h = HikeMath.calcRouteEtaMs({ distanceM: d, profile: 'car', routerDurationSec: totalDurSec });
+  if (pf === 'car' || hasDirect) {
+    const h = HikeMath.calcRouteEtaMs({ distanceM: d, profile: pf, routerDurationSec: pf === 'car' ? totalDurSec : null });
     routeEstMs = h;
-    info.innerHTML = renderDock('<span>🚗 <b>≈ ' + HikeMath.fmtDurationShort(h) + '</b></span><span>Zračno: <b>' + fmtD(dist(a, b)) + '</b></span>');
+    info.innerHTML = renderDock('<span>' + (pf === 'car' ? '🚗' : '⏱') + ' <b>≈ ' + HikeMath.fmtDurationShort(h) + '</b></span><span>' + (hasDirect ? 'Offline zračna linija' : 'Zračno: <b>' + fmtD(dist(a, b)) + '</b>') + '</span>');
     prof.style.display = 'none';
     return;
   }
@@ -2801,7 +2965,7 @@ async function routeInfo() {
   }
   const [up, dn] = asc(el), h = HikeMath.calcRouteEtaMs({ distanceM: d, ascentM: up, profile: pf }); routeEstMs = h;
   info.innerHTML = renderDock('<span>▲ <b>+' + Math.round(up) + ' m</b></span><span>▼ <b>−' + Math.round(dn) + ' m</b></span><span>⏱ <b>≈ ' + HikeMath.fmtDurationShort(h) + '</b></span>');
-  drawProfile(el);
+  drawProfile(el, d);
 }
 async function routeSave() {
   const pf = (rSegs[0] && rSegs[0].prof) || rtProfVal, pi = HikeMath.getRouteProfile(pf);
@@ -2976,6 +3140,8 @@ function navFollow(t) {
   $('nav').style.display = 'flex'; document.body.classList.add('nav-on');
   $('navN').textContent = '→ ' + navT.name;
   navUpdate();
+  if (typeof syncWakeLock === 'function') syncWakeLock();
+  if (typeof gSyncTouchBar === 'function') gSyncTouchBar();
   if (me) { locLock = true; centerOnMe(Math.max(map.getZoom(), 15), true); } else map.fitBounds(L.latLngBounds(ll), { padding: [40, 40] });
   if (pf !== 'car' && !rt.hasAlt && navigator.onLine) {
     const n = Math.min(100, rt.pts.length), S = [], idxs = [];
@@ -3006,8 +3172,8 @@ function navFollowRoute() {
 }
 function navTo(ll, name) { navStop(); sheet(); startWatch(); navT = { ll, name, done: false };
   navLine = L.polyline([], { color: '#E24B4A', weight: 3, dashArray: '6 7' }).addTo(map); navDot = L.circleMarker(ll, { radius: 8, color: '#fff', weight: 2.5, fillColor: '#E24B4A', fillOpacity: 1 }).addTo(map);
-  $('nav').style.display = 'flex'; document.body.classList.add('nav-on'); $('navN').textContent = '→ ' + name; $('navProg').firstChild.style.width = '0%'; navUpdate(); if (me) { locLock = true; centerOnMe(Math.max(map.getZoom(), 15), true); } else map.setView(ll, Math.max(map.getZoom(), 15)); }
-function navStop() { if (navLine) map.removeLayer(navLine); if (navDot) map.removeLayer(navDot); if (navTrk) map.removeLayer(navTrk); navT = navLine = navDot = navTrk = null; $('nav').style.display = 'none'; document.body.classList.remove('nav-on'); }
+  $('nav').style.display = 'flex'; document.body.classList.add('nav-on'); $('navN').textContent = '→ ' + name; $('navProg').firstChild.style.width = '0%'; navUpdate(); if (me) { locLock = true; centerOnMe(Math.max(map.getZoom(), 15), true); } else map.setView(ll, Math.max(map.getZoom(), 15)); if (typeof syncWakeLock === 'function') syncWakeLock(); if (typeof gSyncTouchBar === 'function') gSyncTouchBar(); }
+function navStop() { if (navLine) map.removeLayer(navLine); if (navDot) map.removeLayer(navDot); if (navTrk) map.removeLayer(navTrk); navT = navLine = navDot = navTrk = null; $('nav').style.display = 'none'; document.body.classList.remove('nav-on'); if (typeof syncWakeLock === 'function') syncWakeLock(); if (typeof gSyncTouchBar === 'function') gSyncTouchBar(); }
 function navUpdate() { if (!navT) return;
   if (navT.rt) {
     const rt = navT.rt, pf = navT.prof || 'trail', pi = HikeMath.getRouteProfile(pf);
@@ -3446,19 +3612,33 @@ async function trkDelYes(id, backToList = false) {
   gUpdateCross(); gTickHud();
 }
 let gMarkMode = false, gMarkDraftPaused = false, gMenuSlideBlockUntil = 0, gOkSlideBlockUntil = 0;
+function gOverlayBlocksStatus() {
+  const ip = $('ip');
+  return $('gMenu').classList.contains('on')
+    || $('sheet').style.display === 'block'
+    || $('sb').classList.contains('g-open') || $('sb').style.display === 'flex' || $('sb').style.display === 'block'
+    || calOn
+    || (ip.style.display === 'block' && ip.classList.contains('route-dock'));
+}
 function gSyncTouchBar() {
   const tb = $('gTouchBar');
   const menuOpen = $('gMenu').classList.contains('on');
   const shOpen = $('sheet').style.display === 'block';
   const sbOpen = $('sb').classList.contains('g-open') || $('sb').style.display === 'flex' || $('sb').style.display === 'block';
+  const ipOpen = $('ip').style.display === 'block';
   const hasInfo = !!info.textContent.trim();
   const hasTool = !!(mode || pickCb || gObjPick || calOn);
   const canBack = !!(menuOpen || shOpen || sbOpen || hasInfo || hasTool || navT || tools.getLayers().length || trk.getLayers().length);
   if (tb) tb.classList.toggle('has-back', canBack);
   const st = $('gStatus');
-  if (st) st.classList.toggle('has-exit', gTouchMode && (hasTool || !!navT));
-  const tSos = $('tSosBtn');
-  if (tSos) tSos.classList.toggle('show', gTouchMode && !menuOpen && !shOpen && !sbOpen && !calOn);
+  if (st) {
+    st.classList.toggle('has-exit', gTouchMode && (hasTool || !!navT));
+    if (gOverlayBlocksStatus() && Date.now() >= gSosHintUntil && Date.now() >= gRotHintUntil) st.style.display = 'none';
+  }
+  const sc = $('gScaleBar');
+  if (sc) sc.style.display = menuOpen ? 'none' : 'flex';
+  const tZoom = $('tZoomStack');
+  if (tZoom) tZoom.classList.toggle('show', gTouchMode && !menuOpen && !shOpen && !sbOpen && !calOn && !ipOpen);
 }
 function gUpdateCross() {
   const cr = $('gCross'), menuOpen = $('gMenu').classList.contains('on'), shOpen = $('sheet').style.display === 'block';
@@ -3543,10 +3723,12 @@ function gOpenCrossMenu() {
   gStack = [{ id: 'cross', title: 'TAČKA POD KRSTIĆEM', prevIdx: 0 }];
   gIdx = 0; gObjPick = false;
   sheet(); closeSearch();
+  info.innerHTML = ''; prof.style.display = 'none'; $('ip').style.display = 'none'; $('ip').classList.remove('route-dock');
   if (calOn) calToggle(false);
   $('gMenu').classList.add('on');
   gMenuRender();
   gUpdateCross();
+  gTickHud();
 }
 function gMainItems() {
   const list = [];
@@ -3667,6 +3849,7 @@ function gSubItems(id) {
           gMenuRender();
         } },
       { t: 'Mjerilo karte: 1:' + fmtS(curScale.ratio), s: 'OK: 1:10k / 25k / 50k / 100k', fn: () => { cycleScalePreset(); gMenuRender(); } },
+      { t: 'Ekran uvijek upaljen: ' + (gKeepAwake ? 'DA ✓' : 'NE'), s: 'Ne gasi ekran tokom rada / A→B', fn: () => { toggleKeepAwake(); gMenuRender(); } },
       { t: 'Ekran: ' + gDispNames[gDispMode], s: 'OK za promjenu', fn: () => {
           gDispMode = (gDispMode + 1) % 3;
           document.body.classList.toggle('g-sun', gDispMode === 1);
@@ -3712,10 +3895,10 @@ function gMenuRender() {
   if (menuEl) menuEl.classList.toggle('cross-menu', isCross);
   $('gMenuTitle').textContent = m.title;
   $('gMenuPos').textContent = (gIdx + 1) + '/' + m.items.length;
-  if ($('gMenuBackBtn')) $('gMenuBackBtn').classList.toggle('hide', !gStack.length);
+  if ($('gMenuBackBtn')) $('gMenuBackBtn').classList.toggle('hide', HikeMath.resolveMenuBackAction(gStack) !== 'pop');
   if ($('gMenuFt')) {
     $('gMenuFt').innerHTML = gTouchMode
-      ? (isCross ? '<span>Klizi prstom · Pusti za izbor</span><span>MENU → Glavni</span>' : '<span>Klizi ili dodirni · Povuci desno izlaz</span><span>✕ Zatvori</span>')
+      ? (isCross ? '<span>Klizi · Pusti za izbor</span><span>MENU Glavni</span>' : '<span>Klizi ili dodirni · Desno izlaz</span><span>✕ Zatvori</span>')
       : '<span>▲▼ Izbor · OK Potvrdi</span><span>NAZAD Izlaz</span>';
   }
   list.innerHTML = m.items.map((it, i) =>
@@ -3751,10 +3934,11 @@ function gMenuToggle(force) {
     el.classList.add('on'); gMenuRender();
   } else { el.classList.remove('on'); el.classList.remove('cross-menu'); gStack = []; }
   gUpdateCross();
+  gTickHud();
 }
 function gMenuClose(keepReturn = false) {
   gReturnMenu = keepReturn && gStack.length ? { stack: gStack.map(x => ({ ...x })), idx: gIdx } : null;
-  $('gMenu').classList.remove('on'); $('gMenu').classList.remove('cross-menu'); gStack = []; gUpdateCross();
+  $('gMenu').classList.remove('on'); $('gMenu').classList.remove('cross-menu'); gStack = []; gUpdateCross(); gTickHud();
 }
 function gMenuActivate() {
   const it = gCurMenu().items[gIdx]; if (!it) return;
@@ -3809,7 +3993,7 @@ function gKey(k, fast = false) {
   if (k === 'back') {
     gBeep(false);
     if (menuOpen) {
-      if (gStack.length) { const p = gStack.pop(); gIdx = p.prevIdx || 0; gMenuRender(); }
+      if (HikeMath.resolveMenuBackAction(gStack) === 'pop') { const p = gStack.pop(); gIdx = p.prevIdx || 0; gMenuRender(); }
       else gMenuClose();
       return;
     }
@@ -4220,41 +4404,6 @@ function gKey(k, fast = false) {
       window.addEventListener('pointercancel', finishOkSlide);
     }
   }
-
-  // Touch Mode hold-1s SOS button (top-right, same accidental-tap protection as deck SOS)
-  const tSos = $('tSosBtn');
-  if (tSos) {
-    let tsT = 0, tsLong = false, tsDown = false;
-    const cancelTS = (showHint = false) => {
-      clearTimeout(tsT); tsT = 0;
-      tSos.classList.remove('hold');
-      if (tsDown && !tsLong && showHint) {
-        gBeep(false);
-        gSosHintUntil = Date.now() + 2600;
-        gTickHud();
-      }
-      tsDown = false;
-      if (tsLong) setTimeout(() => { tsLong = false; }, 350);
-    };
-    const startTS = () => {
-      clearTimeout(tsT); tsT = 0; tsLong = false; tsDown = true;
-      tSos.classList.add('hold');
-      gSosHintUntil = Date.now() + 1800;
-      gTickHud();
-      tsT = setTimeout(() => {
-        tsLong = true; tsDown = false; tsT = 0;
-        tSos.classList.remove('hold');
-        gSosHintUntil = 0;
-        gKey('sos');
-        gTickHud();
-      }, 1000);
-    };
-    tSos.addEventListener('pointerdown', e => { e.stopPropagation(); startTS(); });
-    tSos.addEventListener('pointerup', () => cancelTS(true));
-    tSos.addEventListener('pointercancel', () => cancelTS(false));
-    tSos.addEventListener('pointerleave', () => cancelTS(false));
-    tSos.addEventListener('click', e => { e.stopPropagation(); e.preventDefault(); });
-  }
 })();
 
 addEventListener('keydown', e => {
@@ -4277,7 +4426,14 @@ function gTickHud() {
     if ($('gOledTag')) $('gOledTag').textContent = rec ? (rec.paused ? '⏸ SNIMANJE PAUZIRANO' : '● SNIMANJE AKTIVNO') : 'OLED ŠTEDNJA';
     if ($('gOledStat')) $('gOledStat').textContent = rec ? fmtD(stats(rec.pts).d) + ' · ' + fmtT(recElapsed()) : (meAlt != null ? 'Visina ' + Math.round(meAlt) + ' m' : '—');
   }
-  const st = $('gStatus'), tag = $('gStatTag'), txt = $('gStatTxt'); st.style.display = 'flex';
+  const st = $('gStatus'), tag = $('gStatTag'), txt = $('gStatTxt');
+  const transientToast = Date.now() < gSosHintUntil || Date.now() < gRotHintUntil;
+  if (!transientToast && gOverlayBlocksStatus()) {
+    st.style.display = 'none';
+    gUpdateCross();
+    return;
+  }
+  st.style.display = 'flex';
   if (Date.now() < gSosHintUntil) {
     st.classList.add('rec'); tag.textContent = 'SOS ZAŠTITA';
     txt.textContent = 'Drži SOS 1 sekundu za aktivaciju';
@@ -4353,7 +4509,7 @@ function gToggleFs(forceOn) {
     }
   } catch (e) {}
 }
-const gRefit = () => { map.invalidateSize(); if (locLock && me) centerOnMe(map.getZoom(), false); updScale(); };
+const gRefit = () => { map.invalidateSize(); if (locLock && me) centerOnMe(map.getZoom(), false); updScale(); if (lastProfData && prof.style.display !== 'none' && $('ip').style.display !== 'none') drawProfile(lastProfData.el, lastProfData.totalDistM); };
 document.addEventListener('fullscreenchange', () => setTimeout(gRefit, 120));
 document.addEventListener('webkitfullscreenchange', () => setTimeout(gRefit, 120));
 addEventListener('resize', () => setTimeout(gRefit, 120));
