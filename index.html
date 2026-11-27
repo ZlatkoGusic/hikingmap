@@ -1185,6 +1185,9 @@ svg.leaflet-image-layer.leaflet-interactive path {
   .rtAct button.gFocus { outline: 2px solid #fff !important; outline-offset: -1px; filter: brightness(1.18); }
   .rtFoot { font: 500 9.5px/1.1 ui-monospace, Menlo, monospace; color: #828c87; display: flex; justify-content: space-between; gap: 6px; }
   .rtSaved { color: #86efac; font-weight: 700; }
+  .gItem.recStop { border-left: 3px solid #ef4444 !important; background: rgba(220, 38, 38, .13) !important; }
+  .gItem.recAct { border-left: 3px solid #f59e0b !important; }
+  .recSw { display: inline-block; width: 10px; height: 10px; border-radius: 50%; border: 1.5px solid #fff; vertical-align: -1px; margin-right: 6px; box-shadow: 0 0 4px rgba(0,0,0,.6); }
 </style>
 
 
@@ -1445,6 +1448,7 @@ let mPts = [], mLine = null, rCenter = null, bStart = null, token = 0;
 const btns = { measure: $('bMeasure'), bearing: $('bBearing'), radius: $('bRadius'), elev: $('bElev'), route: $('bRoute') };
 function setMode(m) { dr(false); mode = mode === m ? null : m; Object.entries(btns).forEach(([k, b]) => b.classList.toggle('active', k === mode));
   $('radRow').style.display = mode === 'radius' ? 'flex' : 'none'; resetTools();
+  if (mode === 'route' && typeof mapRot !== 'undefined' && mapRot) setMapRot(false);
   info.textContent = mode ? ({ measure: 'Dodiruj tačke za mjerenje putanje.', bearing: me ? 'Dodirni tačku – bearing od tvoje lokacije.' : 'Dodirni početnu tačku, pa odredište.', radius: 'Dodirni centar, pa drugu tačku (ili upiši radius).', elev: 'Dodirni tačku za nadmorsku visinu.', route: 'Dodirni A, pa B (i dalje za još dionica). Staza se traži po putevima – treba internet.' })[mode] : 'Alat isključen.'; }
 function resetTools() { tools.clearLayers(); rPts = []; rSegs = []; mPts = []; mLine = rCenter = bStart = null; if (typeof gSnapRtIdx !== 'undefined') gSnapRtIdx = null; prof.style.display = 'none'; token++; }
 for (const k in btns) btns[k].onclick = () => setMode(k);
@@ -1639,7 +1643,9 @@ $('q').addEventListener('keydown', e => { if (e.key === 'Enter') { clearTimeout(
 /* ---------- Rute: prikaz, GPX uvoz/izvoz ---------- */
 const trackCache = {}; let curTrack = null;
 function showTrack(t, fit = true) { curTrack = t;
-  if (!t.pts.length) return; const ll = t.pts.map(p => [p.lat, p.lng]), l = L.polyline(ll, { color: '#d93025', weight: 4 }).addTo(trk);
+  if (!t.pts.length) return; const ll = t.pts.map(p => [p.lat, p.lng]);
+  L.polyline(ll, { color: '#141618', weight: 7, opacity: .75 }).addTo(trk);
+  const l = L.polyline(ll, { color: t.color || '#ff2e93', weight: 4.5, opacity: .98 }).addTo(trk);
   dot(ll[0], '#2e7d32', trk); dot(ll[ll.length - 1], '#d93025', trk);
   (t.wpts || []).forEach(w => dot([w.lat, w.lng], '#1a73e8', trk).bindTooltip('<span class="cr">' + esc(w.name) + '</span>', { direction: 'center', className: 'lbl' }));
   const s = stats(t.pts), a = t.pts[0], b = t.pts[t.pts.length - 1];
@@ -1670,23 +1676,83 @@ const trkFollow = id => { if (typeof gReturnMenu !== 'undefined') gReturnMenu = 
 const trkDel = async id => { await dbDel('tracks', id); delete trackCache[id]; tracksOpen(); };
 
 /* ---------- Snimanje rute ---------- */
-let rec = null, recLine = null, wake = null;
+const REC_COLS = [
+  { name: 'Magenta', hex: '#ff2e93', edge: '#1a0610' },
+  { name: 'Tirkizna', hex: '#00e5ff', edge: '#031b22' },
+  { name: 'Žuta (Hi-Vis)', hex: '#ffd60a', edge: '#1c1600' },
+  { name: 'Zelena (Neon)', hex: '#39ff14', edge: '#061c04' }
+];
+let recColIdx = 0;
+try { const sc = parseInt(localStorage.getItem('hike_recCol'), 10); if (sc >= 0 && sc < REC_COLS.length) recColIdx = sc; } catch (e) {}
+const recColor = () => REC_COLS[recColIdx] || REC_COLS[0];
+let rec = null, recLine = null, recCasing = null, recStartDot = null, wake = null;
+function recClearLayers() {
+  if (recCasing) { map.removeLayer(recCasing); recCasing = null; }
+  if (recLine) { map.removeLayer(recLine); recLine = null; }
+  if (recStartDot) { map.removeLayer(recStartDot); recStartDot = null; }
+}
+function recUpdateStyle() {
+  const c = recColor();
+  if (recCasing) recCasing.setStyle({ color: c.edge });
+  if (recLine) recLine.setStyle({ color: c.hex, dashArray: rec && rec.paused ? '8 8' : null });
+}
+function recNextColor() {
+  recColIdx = (recColIdx + 1) % REC_COLS.length;
+  try { localStorage.setItem('hike_recCol', String(recColIdx)); } catch (e) {}
+  recUpdateStyle();
+}
 function updRec() { $('rec').innerHTML = rec ? (() => { const s = stats(rec.pts); return '⏺ ' + fmtD(s.d) + ' · ' + fmtT(Date.now() - rec.t0) + ' · +' + Math.round(s.up) + '/−' + Math.round(s.dn) + ' m' + (rec.paused ? ' · pauza' : ''); })() : ''; }
 async function recStart(cur) {
-  startWatch(); rec = cur || { pts: [], paused: false, t0: Date.now() }; recLine = L.polyline(rec.pts.map(p => [p.lat, p.lng]), { color: '#d93025', weight: 4 }).addTo(map);
+  startWatch(); recClearLayers();
+  rec = cur || { pts: [], paused: false, t0: Date.now() };
+  const ll = rec.pts.map(p => [p.lat, p.lng]), c = recColor();
+  recCasing = L.polyline(ll, { color: c.edge, weight: 8, opacity: .88 }).addTo(map);
+  recLine = L.polyline(ll, { color: c.hex, weight: 4.5, opacity: 1, dashArray: rec.paused ? '8 8' : null }).addTo(map);
+  if (ll.length) recStartDot = L.circleMarker(ll[0], { radius: 7, color: '#fff', weight: 2.5, fillColor: '#22c55e', fillOpacity: 1 }).addTo(map);
   $('bRecT').textContent = 'Zaustavi'; $('bRec').classList.add('active'); $('bPause').style.display = '';
-  try { wake = await navigator.wakeLock.request('screen'); } catch (e) {} updRec(); }
+  try { wake = await navigator.wakeLock.request('screen'); } catch (e) {} updRec(); if (typeof gTickHud === 'function') gTickHud(); }
 function recPoint(pos) { if (!rec || rec.paused) return; const c = pos.coords; if (c.accuracy > 40) return;
   const p = { lat: c.latitude, lng: c.longitude, alt: c.altitude, t: pos.timestamp }, last = rec.pts[rec.pts.length - 1]; if (last && dist(last, p) < 5) return;
-  rec.pts.push(p); recLine.addLatLng(p); if (rec.pts.length % 10 === 0) dbSet('tracks', 'cur', rec); updRec(); }
+  rec.pts.push(p);
+  if (recCasing) recCasing.addLatLng(p);
+  if (recLine) recLine.addLatLng(p);
+  if (!recStartDot) recStartDot = L.circleMarker([p.lat, p.lng], { radius: 7, color: '#fff', weight: 2.5, fillColor: '#22c55e', fillOpacity: 1 }).addTo(map);
+  if (rec.pts.length % 10 === 0) dbSet('tracks', 'cur', rec); updRec(); }
 async function recStop() {
-  const r = rec; rec = null; map.removeLayer(recLine); dbDel('tracks', 'cur'); if (wake) wake.release().catch(() => {});
-  $('bRecT').textContent = 'Snimaj rutu'; $('bRec').classList.remove('active'); $('bPause').style.display = 'none'; updRec();
-  if (r.pts.length < 2) { info.textContent = 'Premalo tačaka – ruta nije spremljena.'; return; }
+  if (!rec) return;
+  const r = rec; rec = null; recClearLayers(); dbDel('tracks', 'cur'); if (wake) wake.release().catch(() => {});
+  $('bRecT').textContent = 'Snimaj rutu'; $('bRec').classList.remove('active'); $('bPause').style.display = 'none'; $('bPauseT').textContent = 'Pauza'; updRec();
+  if (typeof gReturnMenu !== 'undefined') gReturnMenu = null;
+  sheet();
+  if (r.pts.length < 2) { info.textContent = 'Premalo tačaka – ruta nije spremljena.'; if (typeof gTickHud === 'function') gTickHud(); return; }
   const defNm = 'Tura ' + new Date().toLocaleDateString() + ' ' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  let nm = defNm; try { nm = prompt('Naziv rute:', defNm) || defNm; } catch (e) {}
-  const t = { id: 'trk' + Date.now(), name: nm, pts: r.pts, date: Date.now() };
-  await dbSet('tracks', t.id, t); trackCache[t.id] = t; showTrack(t); }
+  const t = { id: 'trk' + Date.now(), name: defNm, pts: r.pts, date: Date.now(), color: recColor().hex };
+  await dbSet('tracks', t.id, t); trackCache[t.id] = t; showTrack(t);
+  if (typeof gUpdateCross === 'function') gUpdateCross();
+  if (typeof gTickHud === 'function') gTickHud(); }
+function recDiscard() {
+  if (!rec) return;
+  rec = null; recClearLayers(); dbDel('tracks', 'cur'); if (wake) wake.release().catch(() => {});
+  $('bRecT').textContent = 'Snimaj rutu'; $('bRec').classList.remove('active'); $('bPause').style.display = 'none'; $('bPauseT').textContent = 'Pauza'; updRec();
+  if (typeof gReturnMenu !== 'undefined') gReturnMenu = null;
+  sheet(); info.textContent = 'Snimanje odbačeno.';
+  if (typeof gUpdateCross === 'function') gUpdateCross();
+  if (typeof gTickHud === 'function') gTickHud();
+}
+function recAskStop() {
+  if (!rec) return;
+  const s = stats(rec.pts), dur = fmtT(Date.now() - rec.t0);
+  const few = rec.pts.length < 2;
+  sheet('<b>Zaustaviti snimanje rute?</b><div class="kv">Dužina: <b>' + fmtD(s.d) + '</b> · Vrijeme: <b>' + dur + '</b><br><small>Tačaka: ' + rec.pts.length + (few ? ' (premalo za spremanje)' : '') + '</small></div>' +
+    '<div class="row">' +
+    (few ? '<button class="red" onclick="recDiscard()">Zaustavi snimanje</button>' : '<button onclick="recStop()">■ Spremi i zaustavi</button><button class="red" onclick="recDiscard()">Odbaci</button>') +
+    '<button class="gray" onclick="recCancelAsk()">Nastavi snimanje</button></div>');
+}
+function recAskDiscard() {
+  if (!rec) return;
+  sheet('<b>Odbaciti snimanje?</b><div class="kv">Snimljena ruta neće biti spremljena.</div>' +
+    '<div class="row"><button class="red" onclick="recDiscard()">Da, odbaci</button><button class="gray" onclick="recCancelAsk()">Ne, nastavi</button></div>');
+}
 function recAskStart() {
   sheet('<b>Započeti snimanje rute?</b><div class="kv">Želite li započeti snimanje nove GPS rute?</div>' +
     '<div class="row"><button onclick="recConfirmStart()">Da, započni</button><button class="gray" onclick="recCancelAsk()">Ne, odustani</button></div>');
@@ -1701,8 +1767,8 @@ function recCancelAsk() {
     $('gMenu').classList.add('on'); gMenuRender(); gUpdateCross();
   } else { gUpdateCross(); gTickHud(); }
 }
-$('bRec').onclick = () => rec ? recStop() : recAskStart();
-$('bPause').onclick = () => { rec.paused = !rec.paused; $('bPauseT').textContent = rec.paused ? 'Nastavi' : 'Pauza'; updRec(); };
+$('bRec').onclick = () => rec ? recAskStop() : recAskStart();
+$('bPause').onclick = () => { if (!rec) return; rec.paused = !rec.paused; $('bPauseT').textContent = rec.paused ? 'Nastavi' : 'Pauza'; recUpdateStyle(); updRec(); if (typeof gTickHud === 'function') gTickHud(); };
 setInterval(() => rec && updRec(), 5000);
 dbGet('tracks', 'cur').then(c => { if (c && c.pts && c.pts.length > 1 && confirm('Nađeno prekinuto snimanje. Nastaviti?')) recStart(c); });
 
@@ -2908,10 +2974,20 @@ new MutationObserver(() => {
   }
 }).observe($('sr'), { childList: true });
 
+function gRecMenuItems() {
+  if (!rec) return [];
+  const dTxt = fmtD(stats(rec.pts).d), tTxt = fmtT(Date.now() - rec.t0), col = recColor();
+  return [
+    { t: '■ Zaustavi i spremi rutu', s: dTxt + ' · ' + tTxt, cls: 'recStop', fn: () => { gMenuClose(true); recAskStop(); } },
+    { t: rec.paused ? '▶ Nastavi snimanje' : '⏸ Pauziraj snimanje', s: (rec.paused ? 'Pauzirano · ' : 'Snimanje aktivno · ') + dTxt, cls: 'recAct', fn: () => { $('bPause').click(); gMenuRender(); } },
+    { t: '✕ Odbaci snimanje', s: 'Prekini bez spremanja', cls: 'recAct', fn: () => { gMenuClose(true); recAskDiscard(); } },
+    { t: '<span class="recSw" style="background:' + col.hex + '"></span>Boja rute: ' + col.name, s: 'OK za promjenu boje', cls: 'recAct', fn: () => { recNextColor(); gMenuRender(); } }
+  ];
+}
 function gMainItems() {
   const list = [];
   if (navT) list.push({ t: 'Prekini navigaciju', s: navT.name || 'Aktivna ruta', fn: () => { navStop(); gMenuClose(); gTickHud(); } });
-  if (rec) list.push({ t: rec.paused ? 'Nastavi snimanje' : 'Pauziraj snimanje', s: fmtD(stats(rec.pts).d), fn: () => { $('bPause').click(); gMenuRender(); } });
+  if (rec) list.push(...gRecMenuItems());
   list.push(
     { t: 'Moja lokacija', s: me ? fmtLL(me) : 'Traži GPS', fn: () => { gMenuClose(); $('bLoc').click(); gUpdateCross(); gTickHud(); } },
     { t: 'Traži mjesto', s: 'Tastatura / koordinate', fn: () => { gMenuClose(); gOpenSearch(); } },
@@ -2929,7 +3005,7 @@ function gSubItems(id) {
     { t: 'Azimut', s: 'Linija na mapi (krstić)', fn: () => { gMenuClose(); locLock = false; setMode('bearing'); info.innerHTML = ''; prof.style.display = 'none'; gUpdateCross(); gTickHud(); } },
     { t: 'Nadmorska visina', s: 'Krstić + OK', fn: () => { gMenuClose(); locLock = false; setMode('elev'); info.innerHTML = ''; prof.style.display = 'none'; gUpdateCross(); gTickHud(); } },
     { t: 'Radius (krug)', s: 'Od moje lokacije (m)', fn: () => { gMenuClose(true); gOpenRadius(); } },
-    { t: 'Dionica A→B po stazi', s: 'Do 3 opcije rute + OK', fn: () => { gMenuClose(); locLock = false; setMode('route'); info.innerHTML = ''; prof.style.display = 'none'; gUpdateCross(); gTickHud(); } }
+    { t: 'Dionica A→B po stazi', s: 'Do 3 opcije · Po sjeveru', fn: () => { gMenuClose(); locLock = false; setMode('route'); info.innerHTML = ''; prof.style.display = 'none'; gUpdateCross(); gTickHud(); } }
   ];
   if (id === 'cal') {
     const sky = gSkyOpts();
@@ -2950,13 +3026,10 @@ function gSubItems(id) {
     ];
   }
   if (id === 'routes') return [
-    { t: rec ? 'Zaustavi snimanje' : 'Snimaj rutu', s: rec ? fmtD(stats(rec.pts).d) : 'Nova ruta', fn: () => {
-        if (rec) { gMenuClose(); $('bRec').click(); }
-        else { gMenuClose(true); recAskStart(); }
-      } },
+    ...(rec ? gRecMenuItems() : [{ t: 'Snimaj rutu', s: 'Nova ruta', fn: () => { gMenuClose(true); recAskStart(); } }]),
     { t: 'Spremljene rute', s: 'Prati / GPX', fn: () => { gMenuClose(true); tracksOpen(); } },
     { t: 'Uvezi GPX fajl', s: 'Iz memorije', fn: () => { gMenuClose(); $('gpxIn').click(); } },
-    { t: 'Dionica A→B po stazi', s: 'Krstić + OK', fn: () => { gMenuClose(); locLock = false; setMode('route'); info.innerHTML = ''; prof.style.display = 'none'; gUpdateCross(); gTickHud(); } },
+    { t: 'Dionica A→B po stazi', s: 'Po sjeveru · Krstić + OK', fn: () => { gMenuClose(); locLock = false; setMode('route'); info.innerHTML = ''; prof.style.display = 'none'; gUpdateCross(); gTickHud(); } },
     { t: 'Vrati me do…', s: 'Navigacija', fn: () => { gMenuClose(true); navOpen(); } }
   ];
   if (id === 'marks') return [
@@ -3008,7 +3081,7 @@ function gMenuRender() {
   $('gMenuTitle').textContent = m.title;
   $('gMenuPos').textContent = (gIdx + 1) + '/' + m.items.length;
   list.innerHTML = m.items.map((it, i) =>
-    '<div class="gItem' + (i === gIdx ? ' sel' : '') + '"><span>' + it.t + '</span><small>' + (it.s || '') + '</small></div>'
+    '<div class="gItem' + (it.cls ? ' ' + it.cls : '') + (i === gIdx ? ' sel' : '') + '"><span>' + it.t + '</span><small>' + (it.s || '') + '</small></div>'
   ).join('');
   const sel = list.querySelector('.gItem.sel');
   if (sel) {
@@ -3348,6 +3421,9 @@ function gTickHud() {
     } else if (gSnapTrk) {
       st.classList.remove('rec'); tag.textContent = 'STAZA';
       txt.textContent = gSnapTrk.name + ' · OK prati / obriši';
+    } else if (rec) {
+      st.classList.add('rec'); tag.textContent = rec.paused ? 'PAUZA' : 'SNIMA';
+      txt.textContent = fmtD(stats(rec.pts).d) + ' · ' + fmtT(Date.now() - rec.t0) + ' · MENU opcije';
     } else {
       const c = gCrossLatLng();
       st.classList.remove('rec'); tag.textContent = 'KRSTIĆ';
@@ -3355,7 +3431,7 @@ function gTickHud() {
     }
   } else if (rec) {
     st.classList.add('rec'); tag.textContent = rec.paused ? 'PAUZA' : 'SNIMA';
-    txt.textContent = fmtD(stats(rec.pts).d) + ' · ' + fmtT(Date.now() - rec.t0);
+    txt.textContent = fmtD(stats(rec.pts).d) + ' · ' + fmtT(Date.now() - rec.t0) + ' · MENU opcije';
   } else if (navT) {
     st.classList.remove('rec'); tag.textContent = navT.rt ? 'RUTA' : 'MARKER';
     txt.textContent = ($('navD').textContent || '—') + ' · ' + (navT.name || 'Cilj') + ' · 2×NAZAD izlaz';
